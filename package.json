@@ -1,0 +1,19 @@
+{
+  "name": "dj-radio",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.14.0",
+    "lame": "^1.2.4",
+    "mass-random": "^1.0.3",
+    "musicmetadata": "^2.0.4",
+    "object-manipulation": "^1.0.0",
+    "throttle": "^1.0.3"
+  }
+}
