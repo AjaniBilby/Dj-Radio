@@ -1,4 +1,3 @@
-var app = require('express')();
 var passer = require('./components/requestManager.js');
 var liveStream = require('./components/live-stream.js');
 var Stream = require('./components/stream.js');
@@ -10,11 +9,13 @@ var Stream = require('./components/stream.js');
 /*------------------------------------------------------------------------------
   Configer Server
 ------------------------------------------------------------------------------*/
-const PORT = 8080
+const PORT = 8080;
   //Load HTTP protocal and start server
 var server = require('http').Server(passer.server);
   //Pipe requests to PORT
-server.listen(PORT,function(){console.log('Server listening at port '+PORT)});
+server.listen(PORT, function(){
+  console.log('Server listening at port '+PORT);
+});
 
 
 
@@ -102,7 +103,12 @@ passer.get('/stream/listeners', function(req, res){
 });
 
 passer.get('/stream/get/image', function(req, res){
-  var type = albumArt.type || 'jpg'
+  if (!albumArt || typeof(albumArt) != 'object' || !albumArt.type){
+    res.writeHead(400, {});
+    res.end();
+  }
+
+  var type = albumArt.type || 'jpg';
 
   res.writeHead(200, {
     'Content-Type': passer.documentTypes[type]

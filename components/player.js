@@ -15,6 +15,11 @@ var handles = {
 
 
 function PlayNext(){
+  if (module.exports.listeners){
+    library.songEnd(module.exports.currentSong, module.exports.listeners.num || 0);
+  }
+
+
   var start = Date.now();
 
   //Check playlist
@@ -75,7 +80,7 @@ function PlayNext(){
 
 
 
-PlayNext();
+
 
 module.exports = {
   currentSong: null,
@@ -92,5 +97,9 @@ module.exports = {
     handles[type].push(callback);
 
     return handles[type][handles[type].length-1];
-  }
+  },
+  listeners: 0
 };
+
+
+PlayNext();

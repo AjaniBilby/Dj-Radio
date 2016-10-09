@@ -18,6 +18,7 @@ listeners.lose = function(){
   listeners.num -= 1;
   listeners.write(listeners.num);
 };
+player.listeners = listeners;
 
 
 
@@ -50,6 +51,34 @@ live.stream.on('data', function(chunk){
   live.shrinkBuffer();
 });
 
+var encoder = new lame.Encoder({
+  //input
+  channels: 2,
+  bitDepth: 16,
+  sampleRate: 44100,
+
+  //output
+  bitRate: 128,
+  outputSampleRate: 22050,
+  mode: lame.STEREO
+});
+encoder.on('data', function(chunk){
+  if (!live.bottleNeck){
+    //If the BottleNeck is missing create one
+    new BottleNeck();
+  }
+  live.bottleNeck.write(chunk);
+});
+
+
+player.stream.on('data', function(chunk){
+  encoder.write(chunk);
+});
+
+
+
+
+
 module.exports = {
   pass: function(req, res){
     res.writeHead(200, {
@@ -75,29 +104,3 @@ module.exports = {
   player: player,
   listeners: listeners
 };
-
-
-
-var encoder = new lame.Encoder({
-  //input
-  channels: 2,
-  bitDepth: 16,
-  sampleRate: 44100,
-
-  //output
-  bitRate: 128,
-  outputSampleRate: 22050,
-  mode: lame.STEREO
-});
-encoder.on('data', function(chunk){
-  if (!live.bottleNeck){
-    //If the BottleNeck is missing create one
-    new BottleNeck();
-  }
-  live.bottleNeck.write(chunk);
-});
-
-
-player.stream.on('data', function(chunk){
-  encoder.write(chunk);
-});
