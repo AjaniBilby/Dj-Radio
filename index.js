@@ -1,4 +1,4 @@
-var passer = require('./components/requestManager.js');
+var passer = require('passer');
 var liveStream = require('./components/live-stream.js');
 var Stream = require('./components/stream.js');
 
@@ -27,8 +27,6 @@ server.listen(PORT, function(){
 
 passer.publicFolder = "public";
 
-passer.sessionFreeZones = ['/stream.mp3', '/stream/get/info', '/stream/metadata', '/stream/get/image', '/stream/listeners'];
-
 
 
 
@@ -49,7 +47,7 @@ liveStream.player.on('newSong', function(meta){
   metaStream.prevChunk = meta;
 });
 
-passer.get('/stream.mp3', liveStream.pass);
+passer.get('/stream.mp3', liveStream.pass, {fullBody: false});
 
 passer.get('/stream/get/info', function(req, res){
   var data = {
@@ -60,7 +58,7 @@ passer.get('/stream/get/info', function(req, res){
   delete data.song.startTime;
   delete data.song.picture;
   res.end(JSON.stringify(data));
-});
+}, {fullBody: false});
 
 passer.get('/stream/metadata', function(req, res){
   res.writeHead(200, {
@@ -82,7 +80,7 @@ passer.get('/stream/metadata', function(req, res){
     metaStream.remove('data', stream);
     return;
   });
-});
+}, {fullBody: false});
 
 passer.get('/stream/listeners', function(req, res){
   res.writeHead(200, {
@@ -100,7 +98,7 @@ passer.get('/stream/listeners', function(req, res){
     liveStream.listeners.remove('data', stream);
     return;
   });
-});
+}, {fullBody: false});
 
 passer.get('/stream/get/image', function(req, res){
   if (!albumArt || typeof(albumArt) != 'object' || !albumArt.type){
@@ -115,4 +113,4 @@ passer.get('/stream/get/image', function(req, res){
   });
 
   res.end(albumArt.data);
-});
+}, {fullBody: false});
