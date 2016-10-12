@@ -7,25 +7,11 @@ var Stream = require('./components/stream.js');
 
 
 /*------------------------------------------------------------------------------
-  Configer Server
-------------------------------------------------------------------------------*/
-const PORT = 8080;
-  //Load HTTP protocal and start server
-var server = require('http').Server(passer.server);
-  //Pipe requests to PORT
-server.listen(PORT, function(){
-  console.log('Server listening at port '+PORT);
-});
-
-
-
-
-
-/*------------------------------------------------------------------------------
   HTTP / XML requests
 ------------------------------------------------------------------------------*/
 
 passer.publicFolder = "public";
+passer.listen(8080);
 
 
 
@@ -101,16 +87,16 @@ passer.get('/stream/listeners', function(req, res){
 }, {fullBody: false});
 
 passer.get('/stream/get/image', function(req, res){
-  if (!albumArt || typeof(albumArt) != 'object' || !albumArt.type){
+  if (albumArt && typeof(albumArt) === 'object' && albumArt.type){
+    var type = albumArt.type || 'jpg';
+
+    res.writeHead(200, {
+      'Content-Type': passer.documentTypes[type]
+    });
+
+    res.end(albumArt.data);
+  }else{
     res.writeHead(400, {});
     res.end();
   }
-
-  var type = albumArt.type || 'jpg';
-
-  res.writeHead(200, {
-    'Content-Type': passer.documentTypes[type]
-  });
-
-  res.end(albumArt.data);
 }, {fullBody: false});

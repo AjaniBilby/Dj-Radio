@@ -1,15 +1,15 @@
 {
   "libraryFolders": [
-    "e:/User/Music/MLP/",
-    "e:/User/Music/ElectroSwing/",
-    "e:/User/Music/DaftPunk/",
-    "e:/User/Music/BedRoomPhiloshper/",
-    "e:/User/Music/Gorillaz/",
-    "e:/User/Music/Misc/",
-    "e:/User/Music/MrScruff/",
-    "e:/User/Music/OpperatorPlease/",
-    "e:/User/Music/The Prodigy/",
-    "e:/User/Music/SoundTracks/",
-    "e:/User/Music/Wolfmother/"
+    "%USERHOME%/Music/MLP/",
+    "%USERHOME%/Music/ElectroSwing/",
+    "%USERHOME%/Music/DaftPunk/",
+    "%USERHOME%/Music/BedRoomPhiloshper/",
+    "%USERHOME%/Music/Gorillaz/",
+    "%USERHOME%/Music/Misc/",
+    "%USERHOME%/Music/MrScruff/",
+    "%USERHOME%/Music/OpperatorPlease/",
+    "%USERHOME%/Music/The Prodigy/",
+    "%USERHOME%/Music/SoundTracks/",
+    "%USERHOME%/Music/Wolfmother/"
   ]
 }
