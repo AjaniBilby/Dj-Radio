@@ -6,7 +6,7 @@ var lame = require('lame');
 
 var library = require('../library/main.js');
 
-var playlist = [];
+var playlist = ['C:/Users/Ajani Bilby/Music/MLP/BronyMix/mirage_-_the_fun_has_been_doubled--_fMSqUFG8c_fmt135.mp3'];
 var output = null;
 
 var handles = {
@@ -25,7 +25,9 @@ function PlayNext(){
   //Check playlist
   if (!playlist[0]){
     //If no next song
-    module.exports.currentSong = library.getRandom();
+    var data = library.getRandom();
+    module.exports.currentSong = data.song;
+    module.exports.songId = data.id;
     playlist.push(module.exports.currentSong);
   }
 
@@ -70,7 +72,7 @@ function PlayNext(){
           if (typeof(callback) == 'function'){
             callback(module.exports.currentSongData);
           }else{
-            console.log(callback);
+            console.error("***ERROR: On new song call back is invalid");
           }
         }
       }
@@ -84,9 +86,14 @@ function PlayNext(){
 
 module.exports = {
   currentSong: null,
+  songId: null,
   currentSongData: {},
   stream: new Stream(),
   queue: function(file){
+    if (!isNaN(file)){
+      file = library.getSong(file).file;
+    }
+
     playlist.push(file);
   },
   library: library,

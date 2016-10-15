@@ -28,6 +28,7 @@ metaStream.prevChunk = {};
 var albumArt = new Buffer('');
 
 liveStream.player.on('newSong', function(meta){
+  console.log('ID',liveStream.player.songId);
   albumArt = meta.picture[0];
   metaStream.write(meta);
   metaStream.prevChunk = meta;
@@ -100,3 +101,51 @@ passer.get('/stream/get/image', function(req, res){
     res.end();
   }
 }, {fullBody: false});
+
+
+
+passer.get('/like', function(req, res){
+  if (typeof(req.session.data.likes) != "object"){
+    req.session.data.likes = {};
+  }
+
+  if (req.session.data.likes[liveStream.player.songId] != 1){
+    liveStream.player.library.like(liveStream.player.songId);
+
+    req.session.data.likes[liveStream.player.songId] = 1;
+  }
+
+  res.end("true");
+});
+
+passer.get('/dislike', function(req, res){
+  if (typeof(req.session.data.dislikes) != "object"){
+    req.session.data.dislikes = {};
+  }
+
+  if (req.session.data.dislikes[liveStream.player.songId] != 1){
+    liveStream.player.library.dislikes(liveStream.player.songId);
+
+    req.session.data.dislikes[liveStream.player.songId] = 1;
+  }
+
+  res.end("true");
+});
+
+passer.get('/request/*', function(req, res){
+  var songId = req.url.substr(9) || req.query.id;
+  console.log(req.query.id);
+
+  liveStream.player.queue(songId);
+
+  res.end("true");
+});
+
+passer.get('/request', function(req, res){
+  var songId = req.url.substr(9) || req.query.id;
+  console.log(req.query.id);
+
+  liveStream.player.queue(songId);
+
+  res.end("true");
+});
