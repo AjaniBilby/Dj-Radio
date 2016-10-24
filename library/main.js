@@ -20,7 +20,13 @@ indexer.init(settings);
 module.exports = {
   index: indexer,
   getSong: function(id){
-    return {file: indexer.library.files[id], stats: indexer.files[id], meta: indexer.meta[id]};
+    if (typeof(id) != "number"){
+      var index = indexer.library.files.indexOf(id);
+
+      return {file: id, stats: indexer.library.files[index], meta: indexer.library.meta[index]};
+    }
+
+    return {file: indexer.library.files[id], stats: indexer.library.files[id], meta: indexer.library.meta[id]};
   },
   getMeta: indexer.getMeta,
   getFileInfo: indexer.getFileInfo,

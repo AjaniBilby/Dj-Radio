@@ -2,8 +2,8 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Audio</title>
-    <script>
+    <title>Dj-Radio Player Examples</title>
+    <script id="network-functions">
       function Stream(url, callback, objectify){
         var stream = new XMLHttpRequest();
         var prevLength = 0;
@@ -61,91 +61,200 @@
       }
     </script>
     <style>
-      .header{
-        width: 100%;
-        height: 70px;
-        color: white;
-        font-family: liberation sans;
-        background-color: rgb(60, 60, 60);
+      .progress{
+        display: inline-block;
+        height: 3px;
+        width: 40vw;
+        background-color: rgb(144, 144, 144);
       }
-      .header .title{
-        font-size: 14pt;
-        font-weight: lighter;
-      }
-      .header .artist{
-        font-size: 12pt;
-        font-weight: lighter;
-      }
-      .header .album{
-        font-size: 10pt;
-        font-weight: 200;
-        color: rgb(150, 150, 150);
+
+      .progress .bar{
+        height: 3px;
+        background-color: rgb(42, 201, 135);
       }
     </style>
+    <style>
+      body{
+        font-family: Helvetica, Arial, sans-serif;
+      }
+
+      #prev-played{
+        padding: 15px;
+        width: 30vw;
+        height: 500px;
+        float: right;
+        display: inline-block;
+      }
+
+      #currently-playing{
+        overflow-y: hidden;
+        padding-top: calc(50vh - 100px);
+        height: 200px;
+        align-content: center;
+        vertical-align: middle;
+        display: inline-block;
+        transition: height 1s
+      }
+
+      .title{
+        display: inline-block;
+        font-size: 24pt;
+        font-weight: 200;
+      }
+
+      .album{
+        display: inline-block;
+        padding-top: 5px;
+        color: rgb(110, 110, 110);
+        font-weight: 700;
+        font-size: 12pt;
+      }
+
+      .artist{
+        display: inline-block;
+        padding-top: 5px;
+        color: rgb(110, 110, 110);
+        font-weight: 700;
+        font-size: 12pt;
+      }
+
+      #cover{
+        display: block;
+        width:100px;
+        height: 100px;
+        float: left;
+        padding-right: 15px;
+      }
+
+      @media only screen and (max-width: 500px){
+        #cover{
+          display: none;
+        }
+      }
+    </style>
+    <script>
+      var song = {
+        title: "Title",
+        artist: ["Artist"],
+        album: "Album",
+        duration: 120,
+        startTime: Date.now()
+      }
+    </script>
+    <script id="lib">
+      function randInt(min, max){
+        return Math.round(Math.random()*(max-min)+min);
+      }
+    </script>
+    <script id="display">
+      var colors = [
+        {r: 42, g: 201, b: 135},
+        {r: 190, g: 0, b: 207},
+        {r:255, g:184, b:0},
+        {r:0, g:200, b:213},
+        {r:255, g:0, b:145},
+      ];
+
+      function SetColor(){
+        var color = colors[randInt(0, colors.length-1)];
+        document.getElementById("progessBar").style["background-color"] = "rgb("+color.r+", "+color.g+", "+color.b+")";
+        document.getElementById("album").style["color"] = "rgb("+(color.r-20)+", "+(color.g-20)+", "+(color.b-20)+")";
+      }
+
+      function NewSong(songData){
+        document.getElementById("currently-playing").style.height = "0px";
+
+        document.getElementById('cover').style.display = 'block';
+        document.getElementById('cover').src = window.location.origin+'/stream/get/image';
+
+        setTimeout(function () {
+          if (typeof(songData) == "object"){
+            song = songData
+          }else{
+            songData = song;
+          }
+
+          document.getElementById("title").innerHTML = songData.title || "";
+          document.getElementById("artist").innerHTML = songData.artist.join(', ') || "";
+          if (typeof(songData.album) == 'string' && songData.album != ""){
+            document.getElementById("album").innerHTML = "("+songData.album+")";
+          }else{
+            document.getElementById("album").innerHTML = "";
+          }
+
+          SetColor();
+
+          document.getElementById("currently-playing").style.height = "200px";
+        }, 1200);
+      }
+
+      function Render(){
+        var time = (Date.now()-song.startTime)/1000;
+        var value = (time)/song.duration*100;
+        if (value > 100){
+          value = 100;
+        }else if (value < 0){
+          value = 0;
+        }
+        document.getElementById("progessBar").style.width = value+"%";
+
+        var mins = 0;
+
+        while (time >= 60){
+          time -= 60;
+          mins += 1;
+        }
+        time = Math.floor(time);
+
+        if (time < 10){
+          time = '0'+time;
+        }
+
+        document.getElementById("time").innerHTML = mins+':'+time;
+
+        window.requestAnimationFrame(Render);
+      }
+
+      window.requestAnimationFrame(Render);
+    </script>
   </head>
-  <body style="margin: 0px; padding: 0px;">
-    <div class="header">
-      <div align="center">
-        <div id="song">
-          <img id='cover' style="float: left; padding: 5px; width: 60px; height: 60px"></img>
-          <div id="info" style="text-align: left; vertical-align: middle;">
-            <span class="title" id="title">TITLE</span></br>
-            <span class="artist" id="artist">ARTIST</span>  <span class="album" id="album">ALBUM</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    <audio id="player">
+  <body style="padding: 0px; margin: 0px;" align="center">
+    <audio id="player" autoplay>
       <source src="stream.mp3" type="audio/mpeg">
     </audio>
 
-    <span id="listeners">0</span>
-    <br>
+    <div id="currently-playing" style="text-align: left;">
+      <img id="cover" style="float:left">
+      <div id="content">
+        <div id="text" style="display: inline-block">
+          <span id="title" class="title">Template Title</span></br>
+          <span id="artist" class=artist>Template Artist</span>
+          <span id="album" class="album"> (Template Album)</span>
+        </div>
+        <div class="progress" style="display: inline-block; margin-top: 20px;">
+          <div id="progessBar" class="bar" style="width: 20%"></div>
+        </div></br>
+        <span id="time" style="display:none;">1:02</span>
+      </div>
+    </div>
 
-    <button id="playBtn" onclick="Play()">Play</button></br>
-    <input id="volume" type="range" min="0" max="1" step="0.01" value="1" oninput="player.volume = this.value" onchange="player.volume = this.value"></input></br>
+    <div id="prev-played" align="center">
+    </div>
+
+    <script>
+      NewSong();
+    </script>
+    <script>
+      var metaStream = Stream(window.location.origin+'/stream/metadata', function(meta){
+        console.log('chunk');
+        if (JSON.stringify(song) != JSON.stringify(meta)){
+          song = meta;
+          NewSong();
+        }
+      }, true);
+      document.getElementById('cover').onerror = function(err){
+        document.getElementById('cover').style.display = 'none';
+      };
+    </script>
   </body>
-  <script id="ElementsToJS">
-    var player = document.getElementById('player');
-    var playBtn = document.getElementById('playBtn');
-    var volume = document.getElementById('volume');
-    var title = document.getElementById('title');
-    var artist = document.getElementById('artist');
-    var album = document.getElementById('album');
-    var cover = document.getElementById('cover');
-  </script>
-  <script id="Update-Listeners">
-    var listeners = 0;
-    Stream(window.location.origin+'/stream/listeners', function(data){
-      document.getElementById('listeners').innerHTML = data;
-    }, false);
-  </script>
-  <script id="Update-AudioMetaData">
-    var songInfo = {};
-
-    var metaStream = Stream(window.location.origin+'/stream/metadata', function(meta){
-      songInfo = meta;
-      title.innerHTML = meta.title;
-      artist.innerHTML = meta.artist.join('; ');
-      album.innerHTML = '('+meta.album+')';
-      cover.src = window.location.origin+'/stream/get/image?'+Date.now();
-    }, true);
-  </script>
-  <script id="Player">
-    function Play(play = !player.paused){
-      if (play){
-        console.log('Play');
-        playBtn.innerHTML = "Stop";
-        player.load();
-        player.play();
-      }else{
-        console.log('Stop');
-        playBtn.innerHTML = "Play";
-        player.stop();
-      }
-    }
-    Play(true);
-
-    player.onended = function(){Play(true);};
-  </script>
 </html>

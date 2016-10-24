@@ -26,7 +26,7 @@ app.listen(8080);
 var metaStream = new Stream();
 metaStream.prevChunk = {};
 
-var albumArt = new Buffer('');
+var albumArt = {};
 
 liveStream.player.on('newSong', function(meta){
   console.log('ID',liveStream.player.songId);
@@ -93,17 +93,17 @@ app.get('/stream/listeners', function(req, res){
 }, {fullBody: false});
 
 app.get('/stream/get/image', function(req, res){
-  if (albumArt && typeof(albumArt) === 'object' && albumArt.type){
+  if (albumArt && typeof(albumArt) === 'object'){
     var type = albumArt.type || 'jpg';
 
     res.writeHead(200, {
-      'Content-Type': app.documentTypes[type],
+      'Content-Type': passer.documentTypes[type],
       'Cache-Control': "no-cache"
     });
 
     res.end(albumArt.data);
   }else{
-    res.writeHead(400, {});
+    res.writeHead(404, {});
     res.end();
   }
 }, {fullBody: false});

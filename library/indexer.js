@@ -31,21 +31,31 @@ function Clamp(value = 0.5, min = 0, max = 1, loop = false){
   return value;
 }
 
-function GetMeta(file, callback, options){
+function GetMeta(file, callback, fail){
   mm(fs.createReadStream(file), {duration:true}, function(err, meta){
     if (err){
-      console.log('***Error: ', err);
+      if (typeof(fail)=="function"){
+        fail(err);
+      }else{
+        console.log('***Error: ', err);
+      }
     }else{
-      callback(meta);
+      if (typeof(callback)=="function"){
+        callback(meta);
+      }
     }
   });
 }
 
-function GetFileInfo(path, callback){
+function GetFileInfo(path, callback, fail){
   if (typeof(callback) == 'function'){
     fs.stat(path, function(err, stats){
       if (err){
-        console.error(err);
+        if (typeof(fail) == 'function'){
+          fail(err);
+        }else{
+          console.error(err);
+        }
       }else{
         callback(stats);
       }
@@ -60,11 +70,15 @@ var library = {
     list: []
   },
   meta: [],
+  info: {
+    album: {},
+    artist: {},
+    genre: {}
+  }
 };
 
 var unscanned = [];
-
-
+var scanning = false;
 
 var SongStats = {
   0: {listeners: 0, likes: 0, dislikes: 0},
@@ -92,6 +106,7 @@ var SongStats = {
   22: {listeners: 0, likes: 0, dislikes: 0},
   23: {listeners: 0, likes: 0, dislikes: 0},
 };
+
 
 
 function IndexDir(dir, recursive = true){
@@ -140,12 +155,10 @@ function SongScan(settings){
           unscanned.push(library.files[id]);
         }
       }else{
-        //TODO workout if song has changed and if so check meta again
+        unscanned.push(file);
       }
     }
   }
-
-  ScanLoop();
 
   library.stats.random = new random.statistics();
   for (let item in library.stats.list){
@@ -173,18 +186,41 @@ function SongScan(settings){
   };
 }
 
-function ScanLoop(){
+function ScanSongLoop(onFinish){
+  scanning = true;
+
+  var finish = function(){
+    setTimeout(function () {
+      unscanned.splice(0,1); //remove scanned song
+      ScanSongLoop(finish);
+    }, 0);
+  };
+
+  if (unscanned.length <= 0){
+    if (typeof(finish) == "function"){
+      scanning = false;
+      onFinish();
+    }
+    return;
+  }
+
+
   var index = library.files.indexOf(unscanned[0]);
   if (index != -1){
     GetMeta(unscanned[0], function(meta){
+      delete meta.year;
+      delete meta.track;
+      delete meta.disk;
+      meta.artist = meta.artist.concat(meta.albumartist);
+      delete meta.albumartist;
       library.meta[index] = meta;
-
-      unscanned.splice(0,1); //remove scanned meta
-      ScanLoop();
+      finish();
+    }, function(err){
+      unscanned.splice(0,1); //remove scanned song
+      scanning = false;
     });
   }else{
-    unscanned.splice(0,1); //remove scanned meta
-    ScanLoop();
+    finish();
   }
 }
 
@@ -200,3 +236,12 @@ module.exports = {
   getMeta: GetMeta,
   getFileInfo: GetFileInfo
 };
+
+
+setInterval(function () {
+  if (!scanning && unscanned.length>0){
+    ScanSongLoop(function(){
+      console.log('DONE!');
+    });
+  }
+}, 500);
