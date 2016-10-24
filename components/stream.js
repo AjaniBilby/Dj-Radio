@@ -8,8 +8,8 @@ class Stream{
   }
 }
 
-Stream.prototype.write = function(chunk){
-  for (let listener of this.cache.on.data){
+Stream.prototype.write = function(chunk, type='data'){
+  for (let listener of this.cache.on[type]){
     if (typeof(listener) == 'function'){
       //Make sure it isn't a empty item due too deletion
       listener(chunk);

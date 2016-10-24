@@ -60,17 +60,45 @@
         xmlhttp.send();
       }
     </script>
+    <style>
+      .header{
+        width: 100%;
+        height: 70px;
+        color: white;
+        font-family: liberation sans;
+        background-color: rgb(60, 60, 60);
+      }
+      .header .title{
+        font-size: 14pt;
+        font-weight: lighter;
+      }
+      .header .artist{
+        font-size: 12pt;
+        font-weight: lighter;
+      }
+      .header .album{
+        font-size: 10pt;
+        font-weight: 200;
+        color: rgb(150, 150, 150);
+      }
+    </style>
   </head>
-  <body>
+  <body style="margin: 0px; padding: 0px;">
+    <div class="header">
+      <div align="center">
+        <div id="song">
+          <img id='cover' style="float: left; padding: 5px; width: 60px; height: 60px"></img>
+          <div id="info" style="text-align: left; vertical-align: middle;">
+            <span class="title" id="title">TITLE</span></br>
+            <span class="artist" id="artist">ARTIST</span>  <span class="album" id="album">ALBUM</span>
+          </div>
+        </div>
+      </div>
+    </div>
     <audio id="player">
       <source src="stream.mp3" type="audio/mpeg">
     </audio>
 
-    <img id='cover' style="float: right"></img>
-
-    <h1><span id="title">TITLE</span></h1>
-    <h2><span id="artist">ARTIST</span></h2>
-    <h3><span id="album">ALBUM</span></h3>
     <span id="listeners">0</span>
     <br>
 
@@ -99,7 +127,7 @@
       songInfo = meta;
       title.innerHTML = meta.title;
       artist.innerHTML = meta.artist.join('; ');
-      album.innerHTML = meta.album;
+      album.innerHTML = '('+meta.album+')';
       cover.src = window.location.origin+'/stream/get/image?'+Date.now();
     }, true);
   </script>

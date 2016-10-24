@@ -20,7 +20,7 @@ indexer.init(settings);
 module.exports = {
   index: indexer,
   getSong: function(id){
-    return {file: indexer.files[id], stats: indexer.files[id], meta: indexer.meta[id]};
+    return {file: indexer.library.files[id], stats: indexer.files[id], meta: indexer.meta[id]};
   },
   getMeta: indexer.getMeta,
   getFileInfo: indexer.getFileInfo,

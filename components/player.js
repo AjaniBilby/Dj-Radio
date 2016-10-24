@@ -3,10 +3,12 @@ var mm = require('musicmetadata');
 var Stream = require('./stream.js');
 
 var lame = require('lame');
+var decoder;
+var output;
 
 var library = require('../library/main.js');
 
-var playlist = ['C:/Users/Ajani Bilby/Music/MLP/BronyMix/mirage_-_the_fun_has_been_doubled--_fMSqUFG8c_fmt135.mp3'];
+var playlist = [''];
 var output = null;
 
 var handles = {
@@ -42,12 +44,15 @@ function PlayNext(){
   var file = playlist[0];
   playlist.splice(0, 1);
 
-  var decoder = lame.Decoder();
+  decoder = undefined;
+  output = undefined;
+
+  decoder = lame.Decoder();
   decoder.on('data', function(chunk){
     module.exports.stream.write(chunk);
   });
 
-  var output = fs.createReadStream(file);
+  output = fs.createReadStream(file);
   output.on('data', function(chunk){
     decoder.write(chunk);
   });

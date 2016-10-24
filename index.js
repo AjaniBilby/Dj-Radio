@@ -1,4 +1,5 @@
 var passer = require('passer');
+var app = new passer.app();
 var liveStream = require('./components/live-stream.js');
 var Stream = require('./components/stream.js');
 
@@ -10,8 +11,8 @@ var Stream = require('./components/stream.js');
   HTTP / XML requests
 ------------------------------------------------------------------------------*/
 
-passer.publicFolder = "public";
-passer.listen(8080);
+app.publicFolder = "public";
+app.listen(8080);
 
 
 
@@ -34,9 +35,9 @@ liveStream.player.on('newSong', function(meta){
   metaStream.prevChunk = meta;
 });
 
-passer.get('/stream.mp3', liveStream.pass, {fullBody: false});
+app.get('/stream.mp3', liveStream.pass, {fullBody: false});
 
-passer.get('/stream/get/info', function(req, res){
+app.get('/stream/get/info', function(req, res){
   var data = {
     listeners: liveStream.listeners,
     song: liveStream.player.currentSongData
@@ -47,10 +48,12 @@ passer.get('/stream/get/info', function(req, res){
   res.end(JSON.stringify(data));
 }, {fullBody: false});
 
-passer.get('/stream/metadata', function(req, res){
+app.get('/stream/metadata', function(req, res){
   res.writeHead(200, {
     'Content-Type': 'application/json',
-    'Transfer-Encoding': 'chuncked'
+    'Transfer-Encoding': 'chuncked',
+    'Cache-Control': "no-cache",
+    'Connection': 'Keep-Alive'
   });
 
   var data  = metaStream.prevChunk;
@@ -69,10 +72,12 @@ passer.get('/stream/metadata', function(req, res){
   });
 }, {fullBody: false});
 
-passer.get('/stream/listeners', function(req, res){
+app.get('/stream/listeners', function(req, res){
   res.writeHead(200, {
     'Content-Type': 'application/json',
-    'Transfer-Encoding': 'chuncked'
+    'Transfer-Encoding': 'chuncked',
+    'Cache-Control': "no-cache",
+    'Connection': 'Keep-Alive'
   });
 
   res.write(liveStream.listeners.num.toString());
@@ -87,12 +92,13 @@ passer.get('/stream/listeners', function(req, res){
   });
 }, {fullBody: false});
 
-passer.get('/stream/get/image', function(req, res){
+app.get('/stream/get/image', function(req, res){
   if (albumArt && typeof(albumArt) === 'object' && albumArt.type){
     var type = albumArt.type || 'jpg';
 
     res.writeHead(200, {
-      'Content-Type': passer.documentTypes[type]
+      'Content-Type': app.documentTypes[type],
+      'Cache-Control': "no-cache"
     });
 
     res.end(albumArt.data);
@@ -104,7 +110,7 @@ passer.get('/stream/get/image', function(req, res){
 
 
 
-passer.get('/like', function(req, res){
+app.get('/like', function(req, res){
   if (typeof(req.session.data.likes) != "object"){
     req.session.data.likes = {};
   }
@@ -118,7 +124,7 @@ passer.get('/like', function(req, res){
   res.end("true");
 });
 
-passer.get('/dislike', function(req, res){
+app.get('/dislike', function(req, res){
   if (typeof(req.session.data.dislikes) != "object"){
     req.session.data.dislikes = {};
   }
@@ -132,7 +138,7 @@ passer.get('/dislike', function(req, res){
   res.end("true");
 });
 
-passer.get('/request/*', function(req, res){
+app.get('/request/*', function(req, res){
   var songId = req.url.substr(9) || req.query.id;
   console.log(req.query.id);
 
@@ -141,7 +147,7 @@ passer.get('/request/*', function(req, res){
   res.end("true");
 });
 
-passer.get('/request', function(req, res){
+app.get('/request', function(req, res){
   var songId = req.url.substr(9) || req.query.id;
   console.log(req.query.id);
 

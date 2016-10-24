@@ -2,3 +2,6 @@
 
 #EXTINF, Stream
 http://localhost:8080/stream.mp3
+
+#EXTINF, Djazz
+https://radio.djazz.se/stream/
