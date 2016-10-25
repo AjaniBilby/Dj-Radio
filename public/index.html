@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	  <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dj-Radio Player Examples</title>
     <script id="network-functions">
       function Stream(url, callback, objectify){
@@ -74,7 +74,7 @@
         background-color: rgb(42, 201, 135);
       }
     </style>
-    <style>
+    <style id='css-main'>
       body{
         font-family: Helvetica, Arial, sans-serif;
       }
@@ -94,7 +94,8 @@
         align-content: center;
         vertical-align: middle;
         display: inline-block;
-        transition: height 1s
+        transition: height 1s;
+        transition: width 1s;
       }
 
       .title{
@@ -131,6 +132,10 @@
         #cover{
           display: none;
         }
+
+        #prev-played{
+          width: 100vw;
+        }
       }
     </style>
     <script>
@@ -166,8 +171,8 @@
         document.getElementById("currently-playing").style.height = "0px";
 
         document.getElementById('cover').style.display = 'block';
-		document.getElementById('cover').src = "";
-        document.getElementById('cover').src = window.location.origin+'/stream/get/image';
+		    document.getElementById('cover').src = "";
+        document.getElementById('cover').src = window.location.origin+'/stream/get/image?'+Date.now();
 
         setTimeout(function () {
           if (typeof(songData) == "object"){
@@ -176,7 +181,7 @@
             songData = song;
           }
 
-          document.getElementById("title").innerHTML = songData.title || "";
+          document.getElementById("title").innerHTML = songData.title || "Title";
           document.getElementById("artist").innerHTML = songData.artist.join(', ') || "";
           if (typeof(songData.album) == 'string' && songData.album != ""){
             document.getElementById("album").innerHTML = "("+songData.album+")";
@@ -187,6 +192,11 @@
           SetColor();
 
           document.getElementById("currently-playing").style.height = "200px";
+
+
+          RequestData(window.location.origin+'/stream/get/prevSongs', function(data){
+            console.log(data);
+          }, true);
         }, 1200);
       }
 
@@ -225,7 +235,7 @@
       <source src="stream.mp3" type="audio/mpeg">
     </audio>
 
-    <div id="currently-playing" style="text-align: left;">
+    <div id="currently-playing" style="text-align: left; width: (115px + 40vw)" onclick="player.play()">
       <img id="cover" style="float:left">
       <div id="content">
         <div id="text" style="display: inline-block">
@@ -242,10 +252,6 @@
 
     <div id="prev-played" align="center">
     </div>
-
-    <script>
-      NewSong();
-    </script>
     <script>
       var metaStream = Stream(window.location.origin+'/stream/metadata', function(meta){
         console.log('chunk');

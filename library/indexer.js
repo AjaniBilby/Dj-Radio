@@ -71,9 +71,11 @@ var library = {
   },
   meta: [],
   info: {
+    title: {},
     album: {},
     artist: {},
-    genre: {}
+    genre: {},
+    duration: {}
   }
 };
 
@@ -108,6 +110,33 @@ var SongStats = {
 };
 
 
+
+function Save(){
+  var data = {};
+  data = {
+    files: library.files,
+    stats: {
+      list: library.stats.list
+    }
+  };
+  data = JSON.stringify(data);
+  fs.writeFileSync('./library/data.json', JSON.stringify(data));
+
+  console.log('save');
+}
+function Load(){
+  if (fs.existsSync('./library/data.json')){
+    var data = fs.readFileSync('./library/data.json', 'utf8');
+    data = JSON.parse(JSON.parse(data));
+
+    for (let index in data.stats.list){
+      library.stats.list[data.files.indexOf(data.files[index])] = data.stats.list[index];
+      if (data.stats.list[index][Time()].listeners !== 0){
+        console.log(index, data.stats.list[index][Time()]);
+      }
+    }
+  }
+}
 
 function IndexDir(dir, recursive = true){
   var results = [];
@@ -192,12 +221,12 @@ function ScanSongLoop(onFinish){
   var finish = function(){
     setTimeout(function () {
       unscanned.splice(0,1); //remove scanned song
-      ScanSongLoop(finish);
+      ScanSongLoop(onFinish);
     }, 0);
   };
 
   if (unscanned.length <= 0){
-    if (typeof(finish) == "function"){
+    if (typeof(onFinish) == "function"){
       scanning = false;
       onFinish();
     }
@@ -208,12 +237,44 @@ function ScanSongLoop(onFinish){
   var index = library.files.indexOf(unscanned[0]);
   if (index != -1){
     GetMeta(unscanned[0], function(meta){
-      delete meta.year;
-      delete meta.track;
-      delete meta.disk;
-      meta.artist = meta.artist.concat(meta.albumartist);
-      delete meta.albumartist;
-      library.meta[index] = meta;
+      for (let item of meta.albumartist){
+        if (item !== ''){
+          if (meta.artist.indexOf(item) == -1){
+            meta.artist.push(item);
+          }
+        }
+      }
+
+      if (typeof(library.info.title[meta.title]) != "object"){
+        library.info.title[meta.title] = [];
+      }
+      library.info.title[meta.title].push(index);
+
+      if (typeof(library.info.album[meta.album]) != "object"){
+        library.info.album[meta.album] = [];
+      }
+      library.info.album[meta.album].push(index);
+
+      if (typeof(library.info.duration[meta.duration]) != "object"){
+        library.info.duration[meta.duration] = [];
+      }
+      library.info.duration[meta.duration].push(index);
+
+      for (let artist of meta.artist){
+        if (typeof(library.info.artist[artist]) != "object"){
+          library.info.artist[artist] = [];
+        }
+        library.info.artist[artist].push(index);
+      }
+
+      for (let genre of meta.genre){
+        if (typeof(library.info.genre[genre]) != "object"){
+          library.info.genre[genre] = [];
+        }
+        library.info.genre[genre].push(index);
+      }
+
+
       finish();
     }, function(err){
       unscanned.splice(0,1); //remove scanned song
@@ -239,9 +300,18 @@ module.exports = {
 
 
 setInterval(function () {
+
   if (!scanning && unscanned.length>0){
     ScanSongLoop(function(){
-      console.log('DONE!');
+      console.log("Finished Meta Scan");
+      Save();
     });
   }
 }, 500);
+
+Load();
+
+
+setInterval(function () {
+  Save();
+}, 300000);

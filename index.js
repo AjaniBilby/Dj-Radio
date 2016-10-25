@@ -24,30 +24,30 @@ app.listen(8080);
 ------------------------------------------------------------------------------*/
 
 var metaStream = new Stream();
-metaStream.prevChunk = {};
+metaStream.prevChunk = {
+  title: 'title',
+  album: 'album',
+  artist: [],
+  genre: [],
+  first: true
+};
 
 var albumArt = {};
+var prevSong = [];
 
 liveStream.player.on('newSong', function(meta){
-  console.log('ID',liveStream.player.songId);
+  if (metaStream.prevChunk.first !== true){
+    prevSong.reverse();
+    prevSong.push(metaStream.prevChunk);
+    prevSong.reverse();
+    prevSong.splice(10);
+  }
   albumArt = meta.picture[0];
   metaStream.write(meta);
   metaStream.prevChunk = meta;
 });
 
 app.get('/stream.mp3', liveStream.pass, {fullBody: false});
-
-app.get('/stream/get/info', function(req, res){
-  var data = {
-    listeners: liveStream.listeners,
-    song: liveStream.player.currentSongData
-  };
-  data.song.currentTime = (Date.now() - data.song.startTime)/1000;
-  delete data.song.startTime;
-  delete data.song.picture;
-  res.end(JSON.stringify(data));
-}, {fullBody: false});
-
 app.get('/stream/metadata', function(req, res){
   res.writeHead(200, {
     'Content-Type': 'application/json',
@@ -71,7 +71,6 @@ app.get('/stream/metadata', function(req, res){
     return;
   });
 }, {fullBody: false});
-
 app.get('/stream/listeners', function(req, res){
   res.writeHead(200, {
     'Content-Type': 'application/json',
@@ -91,7 +90,6 @@ app.get('/stream/listeners', function(req, res){
     return;
   });
 }, {fullBody: false});
-
 app.get('/stream/get/image', function(req, res){
   if (albumArt && typeof(albumArt) === 'object'){
     var type = albumArt.type || 'jpg';
@@ -108,7 +106,23 @@ app.get('/stream/get/image', function(req, res){
   }
 }, {fullBody: false});
 
+app.get('/stream/get/info', function(req, res){
+  var data = {
+    listeners: liveStream.listeners,
+    song: liveStream.player.currentSongData
+  };
+  data.song.currentTime = (Date.now() - data.song.startTime)/1000;
+  delete data.song.startTime;
+  delete data.song.picture;
+  res.end(JSON.stringify(data));
+}, {fullBody: false});
+app.get('/stream/get/prevSongs', function(req, res){
+  res.writeHead(200, {
+    'Content-Type': 'application/json'
+  });
 
+  res.end(JSON.stringify(prevSong));
+});
 
 app.get('/like', function(req, res){
   if (typeof(req.session.data.likes) != "object"){
@@ -123,7 +137,6 @@ app.get('/like', function(req, res){
 
   res.end("true");
 });
-
 app.get('/dislike', function(req, res){
   if (typeof(req.session.data.dislikes) != "object"){
     req.session.data.dislikes = {};
@@ -138,16 +151,7 @@ app.get('/dislike', function(req, res){
   res.end("true");
 });
 
-app.get('/request/*', function(req, res){
-  var songId = req.url.substr(9) || req.query.id;
-  console.log(req.query.id);
-
-  liveStream.player.queue(songId);
-
-  res.end("true");
-});
-
-app.get('/request', function(req, res){
+app.get('/dj/request/*', function(req, res){
   var songId = req.url.substr(9) || req.query.id;
   console.log(req.query.id);
 

@@ -57,39 +57,13 @@ function PlayNext(){
     decoder.write(chunk);
   });
 
-  if (library.getSong(file).meta === undefined){
-    library.getMeta(file, function(meta){
-      delete meta.year;
-      delete meta.track;
-      delete meta.disk;
-      meta.artist = meta.artist.concat(meta.albumartist);
-      delete meta.albumartist;
+  library.getMeta(file, function(meta){
+    delete meta.year;
+    delete meta.track;
+    delete meta.disk;
+    meta.artist = meta.artist.concat(meta.albumartist);
+    delete meta.albumartist;
 
-
-      var timeElapsed = Date.now() - start;
-      meta.startTime = start;
-      module.exports.currentSongData = meta;
-
-      setTimeout(function(){
-        //After song ends
-        PlayNext();
-      }, (meta.duration*1000) - timeElapsed);
-
-      if (handles){
-        if (typeof(handles.newSong) == 'object'){
-          for (let callback of handles.newSong){
-            if (typeof(callback) == 'function'){
-              callback(module.exports.currentSongData);
-            }else{
-              console.error("***ERROR: On new song call back is invalid");
-            }
-          }
-        }
-      }
-    });
-  }else{
-
-    var meta = library.getSong(file).meta;
 
     var timeElapsed = Date.now() - start;
     meta.startTime = start;
@@ -111,7 +85,7 @@ function PlayNext(){
         }
       }
     }
-  }
+  });
 }
 
 
