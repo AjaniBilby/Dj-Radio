@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dj-Radio Player Examples</title>
     <script id="network-functions">
       function Stream(url, callback, objectify){
@@ -165,6 +166,7 @@
         document.getElementById("currently-playing").style.height = "0px";
 
         document.getElementById('cover').style.display = 'block';
+		document.getElementById('cover').src = "";
         document.getElementById('cover').src = window.location.origin+'/stream/get/image';
 
         setTimeout(function () {
