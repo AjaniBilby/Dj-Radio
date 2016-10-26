@@ -32,6 +32,10 @@ function Clamp(value = 0.5, min = 0, max = 1, loop = false){
 }
 
 function GetMeta(file, callback, fail){
+  if (typeof(callback) != 'function'){
+    return;
+  }
+
   mm(fs.createReadStream(file), {duration:true}, function(err, meta){
     if (err){
       if (typeof(fail)=="function"){
@@ -40,9 +44,9 @@ function GetMeta(file, callback, fail){
         console.log('***Error: ', err);
       }
     }else{
-      if (typeof(callback)=="function"){
-        callback(meta);
-      }
+      meta.artist.concat(meta.albumartist);
+      delete meta.albumartist;
+      callback(meta);
     }
   });
 }
@@ -237,13 +241,6 @@ function ScanSongLoop(onFinish){
   var index = library.files.indexOf(unscanned[0]);
   if (index != -1){
     GetMeta(unscanned[0], function(meta){
-      for (let item of meta.albumartist){
-        if (item !== ''){
-          if (meta.artist.indexOf(item) == -1){
-            meta.artist.push(item);
-          }
-        }
-      }
 
       if (typeof(library.info.title[meta.title]) != "object"){
         library.info.title[meta.title] = [];
@@ -254,11 +251,6 @@ function ScanSongLoop(onFinish){
         library.info.album[meta.album] = [];
       }
       library.info.album[meta.album].push(index);
-
-      if (typeof(library.info.duration[meta.duration]) != "object"){
-        library.info.duration[meta.duration] = [];
-      }
-      library.info.duration[meta.duration].push(index);
 
       for (let artist of meta.artist){
         if (typeof(library.info.artist[artist]) != "object"){
@@ -288,6 +280,22 @@ function ScanSongLoop(onFinish){
 
 module.exports = {
   library: library,
+  list: function(type, item){
+    if (type == 'title' || type == 'album' || type == 'artist' || type == 'genre'){
+      if (typeof(item) != 'string'){
+        var list = [];
+        for (let key in library.info[type]){
+          list.push(key);
+        }
+
+        return list;
+      }else{
+        return library.info[type][item];
+      }
+    }else{
+      return null;
+    }
+  },
   init: function(settings){
     SongScan(settings);
   },

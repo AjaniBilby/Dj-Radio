@@ -19,6 +19,7 @@ indexer.init(settings);
 
 module.exports = {
   index: indexer,
+  list: indexer.list,
   getSong: function(id){
     if (typeof(id) != "number"){
       var index = indexer.library.files.indexOf(id);
@@ -26,7 +27,7 @@ module.exports = {
       return {file: id, stats: indexer.library.files[index], meta: indexer.library.meta[index]};
     }
 
-    return {file: indexer.library.files[id], stats: indexer.library.files[id], meta: indexer.library.meta[id]};
+    return {file: indexer.library.files[id], stats: indexer.library.files[id]};
   },
   getMeta: indexer.getMeta,
   getFileInfo: indexer.getFileInfo,

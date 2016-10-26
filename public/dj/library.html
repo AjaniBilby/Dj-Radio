@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Dj Library</title>
+    <style>
+      body{
+        margin: 0;
+        overflow: hidden;
+      }
+
+      p{
+        color: white;
+      }
+
+      h1{
+        font-family: Montserrat;
+        margin: 10px 0px 10px 0px;
+        color: white;
+      }
+
+      h2{
+        font-family: Montserrat-Light;
+        margin: 10px 0px 10px 0px;
+        color: rgb(230, 230, 230);
+      }
+
+      h3{
+        font-family: Montserrat-UltraLight;
+        margin: 10px 0px 10px 0px;
+        color: rgb(220, 220, 220);
+      }
+
+      h4{
+        font-family: Montserrat-Hairline;
+        margin: 5px 0px 5px 0px;
+        color: rgb(210, 210, 210);
+      }
+
+      h5{
+        font-family: Montserrat-Hairline;
+        margin: 5px 0px 5px 0px;
+        color: rgb(200, 200, 200)
+      }
+    </style>
+    <style>
+      .songList{
+        overflow-y: auto;
+        height: 100vh;
+        display: none;
+      }
+    </style>
+    <script id="network-functions">
+      function Stream(url, callback, objectify){
+        var stream = new XMLHttpRequest();
+        var prevLength = 0;
+        stream.onprogress = function(data){
+          var newLength = data.currentTarget.responseText.length;
+          var pass = data.currentTarget.responseText.substr(newLength-(newLength-prevLength), newLength);
+          prevLength = newLength;
+
+          if (objectify){
+            try {
+              data = JSON.parse(pass);
+            }catch (e){
+              console.error('Data is not valid JSON \n('+pass+')\nReason: '+e+'\n');
+            }finally{
+              callback(data);
+            }
+          }else{
+            callback(pass);
+          }
+        };
+        stream.open("GET", url, true);
+        stream.send();
+
+        stream.ontimeout = function(){
+          Stream(url, callback, objectify);
+          delete stream;
+        };
+
+        stream.onreadystatechange = function() {
+          if (stream.readyState == 4 && stream.status == 200){
+            Stream(url, callback, objectify);
+            delete stream;
+          }
+        };
+
+        return stream;
+      }
+      function RequestData(file, callback, objectify = true){
+        var data = "";
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function() {
+          if (xmlhttp.readyState == 4 && xmlhttp.status == 200){
+            var resData = xmlhttp.responseText;
+            if (objectify === true){
+              resData = JSON.parse(resData);
+            }
+            if (typeof(callback) == "function"){
+              callback(resData);
+            }
+            return resData;
+          }
+        };
+        xmlhttp.open("GET", file, true);
+        xmlhttp.send();
+
+        return xmlhttp;
+      }
+    </script>
+
+    <script>
+    var request;
+      function Show(type){
+        document.getElementById('album').style.display = 'none';
+        document.getElementById('artist').style.display = 'none';
+        document.getElementById('genre').style.display = 'none';
+        document.getElementById('title').style.display = 'none';
+        document.getElementById('songs').style.display = 'none';
+        document.getElementById(type).style.display = 'block';
+
+        request = RequestData(location.origin+'/dj/list/'+type, function(data){
+          document.getElementById(type).innerHTML = '';
+          data.sort(function(a, b){
+            a = a.toLowerCase();
+            b = b.toLowerCase();
+
+            if (a > b){
+              return 1;
+            }else if (a < b){
+              return -1;
+            }else{
+              return 0;
+            }
+          });
+          for (let item of data){
+            var element = document.createElement('DIV');
+            element.innerHTML += item;
+            element.onclick = `SongSongsOfType(${type}, ${item})`;
+            document.getElementById(type).appendChild(element);
+            //document.getElementById(type).innerHTML += '<div onclick="">'+item+'</div></br>'
+          };
+        }, true);
+      };
+      function ShowSongsOfType(type, item){
+        document.getElementById('album').style.display = 'none';
+        document.getElementById('artist').style.display = 'none';
+        document.getElementById('genre').style.display = 'none';
+        document.getElementById('title').style.display = 'none';
+        document.getElementById('songs').style.display = 'block';
+
+        request = RequestData(location.origin+'/dj/list/'+type, function(data){
+          document.getElementById('songs').innerHTML = '';
+          data.sort(function(a, b){
+            a = a.toLowerCase();
+            b = b.toLowerCase();
+
+            if (a > b){
+              return 1;
+            }else if (a < b){
+              return -1;
+            }else{
+              return 0;
+            }
+          });
+          for (let item of data){
+            document.getElementById('songs').innerHTML += item+'</br>'
+          };
+        }, true);
+      };
+    </script>
+  </head>
+  <body>
+    <div class="songList" id="album"></div>
+    <div class="songList" id="artist"></div>
+    <div class="songList" id="genre"></div>
+    <div class="songList" id="title"></div>
+    <div class="songList" id="songs"></div>
+  </body>
+</html>

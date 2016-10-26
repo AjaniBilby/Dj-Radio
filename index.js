@@ -159,3 +159,43 @@ app.get('/dj/request/*', function(req, res){
 
   res.end("true");
 });
+app.get('/dj/list/*', function(req, res){
+  res.writeHead(200, {
+    'Content-Type': 'application/json'
+  });
+
+  var type = req.url.split('/')[3];
+
+  if (req.url.split('/').length == 4){
+    res.end(JSON.stringify(liveStream.player.library.list(type)));
+  }else{
+    var item = req.url.split('/');
+    item.splice(0,4);
+    item = decodeURI(item.join('/'));
+    res.end(JSON.stringify(liveStream.player.library.list(type, item)));
+  }
+});
+app.get('/dj/song/meta/*', function(req, res){
+  res.writeHead(200, {
+    'Content-Type': 'application/json'
+  });
+
+  var id = req.url.substr(14, req.url.length);
+  liveStream.player.library.getMeta(liveStream.player.library.index.library.files[id], function(meta){
+    delete meta.disk;
+    delete meta.track;
+    meta.picture=true;
+    res.end(JSON.stringify(meta));
+  });
+});
+app.get('/dj/song/picture/*', function(req, res){
+  res.writeHead(200, {
+    'Content-Type': passer.documentTypes.jpg,
+    'Cache-Control': "no-cache"
+  });
+
+  var id = req.url.substr(17, req.url.length);
+  liveStream.player.library.getMeta(liveStream.player.library.index.library.files[id], function(meta){
+    res.end(JSON.stringify(meta.picture[0].data));
+  });
+});
