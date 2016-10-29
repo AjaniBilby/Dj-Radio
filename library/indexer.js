@@ -31,12 +31,18 @@ function Clamp(value = 0.5, min = 0, max = 1, loop = false){
   return value;
 }
 
-function GetMeta(file, callback, fail){
+function GetMeta(file, callback, fail, options){
   if (typeof(callback) != 'function'){
     return;
   }
+  if (typeof(fail) != 'function' && options === undefined && typeof(fail) == 'object'){
+    options = fail;
+  }
+  if (typeof(options) != 'object'){
+    options = {};
+  }
 
-  mm(fs.createReadStream(file), {duration:true}, function(err, meta){
+  mm(fs.createReadStream(file), {duration: options.duration}, function(err, meta){
     if (err){
       if (typeof(fail)=="function"){
         fail(err);
@@ -79,40 +85,41 @@ var library = {
     album: {},
     artist: {},
     genre: {},
-    duration: {}
+    no: {},
   }
 };
 
 var unscanned = [];
 var scanning = false;
 
-var SongStats = {
-  0: {listeners: 0, likes: 0, dislikes: 0},
-  1: {listeners: 0, likes: 0, dislikes: 0},
-  2: {listeners: 0, likes: 0, dislikes: 0},
-  3: {listeners: 0, likes: 0, dislikes: 0},
-  4: {listeners: 0, likes: 0, dislikes: 0},
-  5: {listeners: 0, likes: 0, dislikes: 0},
-  6: {listeners: 0, likes: 0, dislikes: 0},
-  7: {listeners: 0, likes: 0, dislikes: 0},
-  8: {listeners: 0, likes: 0, dislikes: 0},
-  9: {listeners: 0, likes: 0, dislikes: 0},
-  10: {listeners: 0, likes: 0, dislikes: 0},
-  11: {listeners: 0, likes: 0, dislikes: 0},
-  12: {listeners: 0, likes: 0, dislikes: 0},
-  13: {listeners: 0, likes: 0, dislikes: 0},
-  14: {listeners: 0, likes: 0, dislikes: 0},
-  15: {listeners: 0, likes: 0, dislikes: 0},
-  16: {listeners: 0, likes: 0, dislikes: 0},
-  17: {listeners: 0, likes: 0, dislikes: 0},
-  18: {listeners: 0, likes: 0, dislikes: 0},
-  19: {listeners: 0, likes: 0, dislikes: 0},
-  20: {listeners: 0, likes: 0, dislikes: 0},
-  21: {listeners: 0, likes: 0, dislikes: 0},
-  22: {listeners: 0, likes: 0, dislikes: 0},
-  23: {listeners: 0, likes: 0, dislikes: 0},
-};
-
+function SongStats(){
+  return {
+    0: {listeners: 0, likes: 0, dislikes: 0},
+    1: {listeners: 0, likes: 0, dislikes: 0},
+    2: {listeners: 0, likes: 0, dislikes: 0},
+    3: {listeners: 0, likes: 0, dislikes: 0},
+    4: {listeners: 0, likes: 0, dislikes: 0},
+    5: {listeners: 0, likes: 0, dislikes: 0},
+    6: {listeners: 0, likes: 0, dislikes: 0},
+    7: {listeners: 0, likes: 0, dislikes: 0},
+    8: {listeners: 0, likes: 0, dislikes: 0},
+    9: {listeners: 0, likes: 0, dislikes: 0},
+    10: {listeners: 0, likes: 0, dislikes: 0},
+    11: {listeners: 0, likes: 0, dislikes: 0},
+    12: {listeners: 0, likes: 0, dislikes: 0},
+    13: {listeners: 0, likes: 0, dislikes: 0},
+    14: {listeners: 0, likes: 0, dislikes: 0},
+    15: {listeners: 0, likes: 0, dislikes: 0},
+    16: {listeners: 0, likes: 0, dislikes: 0},
+    17: {listeners: 0, likes: 0, dislikes: 0},
+    18: {listeners: 0, likes: 0, dislikes: 0},
+    19: {listeners: 0, likes: 0, dislikes: 0},
+    20: {listeners: 0, likes: 0, dislikes: 0},
+    21: {listeners: 0, likes: 0, dislikes: 0},
+    22: {listeners: 0, likes: 0, dislikes: 0},
+    23: {listeners: 0, likes: 0, dislikes: 0},
+  };
+}
 
 
 function Save(){
@@ -183,7 +190,7 @@ function SongScan(settings){
         if (extention == "mp3"){
           var id = object.firstUndefined(library.files, library.files.length+3) || library.files.length;
           library.files[id] = address+file;
-          library.stats.list[id] = SongStats;
+          library.stats.list[id] = new SongStats();
 
           unscanned.push(library.files[id]);
         }
@@ -241,6 +248,12 @@ function ScanSongLoop(onFinish){
   var index = library.files.indexOf(unscanned[0]);
   if (index != -1){
     GetMeta(unscanned[0], function(meta){
+      if (meta.title === ''){
+        meta.title = 'unknown';
+      }
+      if (meta.album === ''){
+        meta.album = 'unknown';
+      }
 
       if (typeof(library.info.title[meta.title]) != "object"){
         library.info.title[meta.title] = [];
@@ -251,6 +264,11 @@ function ScanSongLoop(onFinish){
         library.info.album[meta.album] = [];
       }
       library.info.album[meta.album].push(index);
+
+      if (typeof(library.info.no[meta.track.no]) != "object"){
+        library.info.no[meta.track.no] = [];
+      }
+      library.info.no[meta.track.no].push(index);
 
       for (let artist of meta.artist){
         if (typeof(library.info.artist[artist]) != "object"){
@@ -303,7 +321,54 @@ module.exports = {
   time: Time,
   clamp: Clamp,
   getMeta: GetMeta,
-  getFileInfo: GetFileInfo
+  stats: {
+    scanning: scanning,
+    unscanned: unscanned
+  },
+  getFileInfo: GetFileInfo,
+  getSongInfo: function(songId){
+    var info = {
+      title: '',
+      album: '',
+      genre: [],
+      artist: [],
+      no: 0,
+    };
+
+    songId = parseInt(songId);
+
+    for (let key in library.info.title){
+      if (library.info.title[key].indexOf(songId) != -1){
+        info.title = key;
+      }
+    }
+
+    for (let key in library.info.album){
+      if (library.info.album[key].indexOf(songId) != -1){
+        info.album = key;
+      }
+    }
+
+    for (let key in library.info.genre){
+      if (library.info.genre[key].indexOf(songId) != -1){
+        info.genre.push(key);
+      }
+    }
+
+    for (let key in library.info.artist){
+      if (library.info.artist[key].indexOf(songId) != -1){
+        info.artist.push(key);
+      }
+    }
+
+    for (let key in library.info.no){
+      if (library.info.no[key].indexOf(songId) != -1){
+        info.no.push(key);
+      }
+    }
+
+    return info;
+  }
 };
 
 

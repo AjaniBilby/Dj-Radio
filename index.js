@@ -36,6 +36,7 @@ var albumArt = {};
 var prevSong = [];
 
 liveStream.player.on('newSong', function(meta){
+  meta.id = liveStream.player.songId;
   if (metaStream.prevChunk.first !== true){
     prevSong.reverse();
     prevSong.push(metaStream.prevChunk);
@@ -100,9 +101,11 @@ app.get('/stream/get/image', function(req, res){
     });
 
     res.end(albumArt.data);
+    return;
   }else{
     res.writeHead(404, {});
     res.end();
+    return;
   }
 }, {fullBody: false});
 
@@ -115,6 +118,7 @@ app.get('/stream/get/info', function(req, res){
   delete data.song.startTime;
   delete data.song.picture;
   res.end(JSON.stringify(data));
+  return;
 }, {fullBody: false});
 app.get('/stream/get/prevSongs', function(req, res){
   res.writeHead(200, {
@@ -122,42 +126,55 @@ app.get('/stream/get/prevSongs', function(req, res){
   });
 
   res.end(JSON.stringify(prevSong));
+  return;
 });
 
-app.get('/like', function(req, res){
+app.get('/like*', function(req, res){
   if (typeof(req.session.data.likes) != "object"){
     req.session.data.likes = {};
   }
 
-  if (req.session.data.likes[liveStream.player.songId] != 1){
-    liveStream.player.library.like(liveStream.player.songId);
+  var id = liveStream.player.songId;
+  if (req.url.length > 5){
+    id = parseInt(req.url.substr(6, req.url.length-1));
+  }
 
-    req.session.data.likes[liveStream.player.songId] = 1;
+  if (req.session.data.likes[id] != 1){
+    liveStream.player.library.like(id);
+
+    req.session.data.likes[id] = 1;
   }
 
   res.end("true");
+  return;
 });
 app.get('/dislike', function(req, res){
   if (typeof(req.session.data.dislikes) != "object"){
     req.session.data.dislikes = {};
   }
 
-  if (req.session.data.dislikes[liveStream.player.songId] != 1){
-    liveStream.player.library.dislikes(liveStream.player.songId);
+  var id = liveStream.player.songId;
+  if (req.url.length > 5){
+    id = parseInt(req.url.substr(6, req.url.length-1));
+  }
 
-    req.session.data.dislikes[liveStream.player.songId] = 1;
+  if (req.session.data.dislikes[id] != 1){
+    liveStream.player.library.dislikes(id);
+
+    req.session.data.dislikes[id] = 1;
   }
 
   res.end("true");
+  return;
 });
 
 app.get('/dj/request/*', function(req, res){
-  var songId = req.url.substr(9) || req.query.id;
-  console.log(req.query.id);
+  var songId = req.url.substr(12);
 
-  liveStream.player.queue(songId);
+  liveStream.player.queue(liveStream.player.library.index.library.files[songId]);
 
   res.end("true");
+  return;
 });
 app.get('/dj/list/*', function(req, res){
   res.writeHead(200, {
@@ -168,11 +185,13 @@ app.get('/dj/list/*', function(req, res){
 
   if (req.url.split('/').length == 4){
     res.end(JSON.stringify(liveStream.player.library.list(type)));
+    return;
   }else{
     var item = req.url.split('/');
     item.splice(0,4);
     item = decodeURI(item.join('/'));
     res.end(JSON.stringify(liveStream.player.library.list(type, item)));
+    return;
   }
 });
 app.get('/dj/song/meta/*', function(req, res){
@@ -181,12 +200,25 @@ app.get('/dj/song/meta/*', function(req, res){
   });
 
   var id = req.url.substr(14, req.url.length);
-  liveStream.player.library.getMeta(liveStream.player.library.index.library.files[id], function(meta){
-    delete meta.disk;
-    delete meta.track;
-    meta.picture=true;
-    res.end(JSON.stringify(meta));
-  });
+  if (id.indexOf(',') == -1){
+    res.end(JSON.stringify(liveStream.player.library.getSongInfo(id)));
+    return;
+  }else{
+    var ids = id.split(',');
+    var count = 0;
+    var response = [];
+    var loop = function(){
+      response.push(liveStream.player.library.getSongInfo(ids[count]));
+      count += 1;
+      if (count < ids.length){
+        loop();
+      }else{
+        res.end(JSON.stringify(response));
+        return;
+      }
+    };
+    loop();
+  }
 });
 app.get('/dj/song/picture/*', function(req, res){
   res.writeHead(200, {
@@ -198,4 +230,22 @@ app.get('/dj/song/picture/*', function(req, res){
   liveStream.player.library.getMeta(liveStream.player.library.index.library.files[id], function(meta){
     res.end(JSON.stringify(meta.picture[0].data));
   });
+
+  return;
+});
+app.get('/dj/playlist', function(req, res){
+  res.writeHead(200, {
+    'Content-Type': 'application/json'
+  });
+
+  res.end(JSON.stringify(liveStream.player.playlist));
+  return;
+});
+app.get('/dj/all/song/meta', function(req, res){
+  res.end(JSON.stringify(liveStream.player.library.index.library.info));
+});
+
+app.get('/stats/indexer', function(req, res){
+  res.end(JSON.stringify(liveStream.player.library.index.stats));
+  return;
 });

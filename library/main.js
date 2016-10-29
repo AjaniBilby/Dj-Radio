@@ -20,6 +20,7 @@ indexer.init(settings);
 module.exports = {
   index: indexer,
   list: indexer.list,
+  getSongInfo: indexer.getSongInfo,
   getSong: function(id){
     if (typeof(id) != "number"){
       var index = indexer.library.files.indexOf(id);
@@ -32,7 +33,7 @@ module.exports = {
   getMeta: indexer.getMeta,
   getFileInfo: indexer.getFileInfo,
   like: function(songId){
-    var time = parseInt(Date().split(' ')[4].split(':')[0]); //Current Hour
+    var time = indexer.time(); //Current Hour
 
     if (typeof(indexer.library.stats.list[songId][time]) == "object"){
       indexer.library.stats.list[songId][time].likes += 1;

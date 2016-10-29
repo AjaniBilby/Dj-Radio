@@ -85,7 +85,7 @@ function PlayNext(){
         }
       }
     }
-  });
+  }, {duration: true});
 }
 
 
@@ -94,6 +94,7 @@ function PlayNext(){
 
 module.exports = {
   currentSong: null,
+  playlist: playlist,
   songId: null,
   currentSongData: {},
   stream: new Stream(),

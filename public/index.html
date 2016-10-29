@@ -73,35 +73,92 @@
         height: 3px;
         background-color: rgb(42, 201, 135);
       }
+
+      #downArrow{
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 55px 50px 0 50px;
+        border-color: #4d4d4d transparent transparent transparent;
+      }
+
+      #upArrow{
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 0 50px 55px 50px;
+        border-color: transparent transparent #4d4d4d transparent;
+      }
+
+      #pageJumper{
+        position: absolute;
+        bottom: 0px;
+        left: calc(50vw - 50px);
+      }
     </style>
-    <style id='css-main'>
+    <style id="css-main">
       body{
         font-family: Helvetica, Arial, sans-serif;
       }
 
       #prev-played{
         padding: 15px;
-        width: 30vw;
+        padding-top: calc(50vh + 100px);
+        width: 90vw;
         height: 500px;
+        text-align: left;
+        margin-left: 15px;
         float: right;
         display: inline-block;
       }
 
+      #pause-display{
+        display: block;
+        background-color: rgba(0, 0, 0, 0.5);
+        width: 100%;
+        height: 100px;
+        text-align: center;
+        font-size: 30pt;
+        overflow-y: hidden;
+        color: white;
+        transition: height 1s;
+      }
+
       #currently-playing{
         overflow-y: hidden;
+        position: relative;
         padding-top: calc(50vh - 100px);
-        height: 200px;
+        width: calc(115px + 40vw);
+        height: 100px;
         align-content: center;
         vertical-align: middle;
         display: inline-block;
+        text-align: left;
         transition: height 1s;
-        transition: width 1s;
+      }
+
+      #content{
+        display: block;
+        height: 100px;
+        overflow-y: hidden;
+      }
+
+      #cover{
+        display: block;
+        width: 100px;
+        height: 100px;
+        float: left;
+        padding-right: 15px;
       }
 
       .title{
         display: inline-block;
         font-size: 24pt;
         font-weight: 200;
+      }
+
+      .input{
+        font-weight: normal;
       }
 
       .album{
@@ -118,14 +175,6 @@
         color: rgb(110, 110, 110);
         font-weight: 700;
         font-size: 12pt;
-      }
-
-      #cover{
-        display: block;
-        width:100px;
-        height: 100px;
-        float: left;
-        padding-right: 15px;
       }
 
       @media only screen and (max-width: 500px){
@@ -152,7 +201,40 @@
         return Math.round(Math.random()*(max-min)+min);
       }
     </script>
+    <script>
+      function Like(id){
+        if (id){
+          RequestData(window.location.origin+'/like/'+id);
+        }else{
+          RequestData(window.location.origin+'/like');
+        }
+      }
+
+      function Dislike(id){
+        if (id){
+          RequestData(window.location.origin+'/dislike/'+id);
+        }else{
+          RequestData(window.location.origin+'/dislike');
+        }
+      }
+    </script>
     <script id="display">
+      Notification.requestPermission(function (permission) {});
+      function Notify(title, content, image) {
+        // Let's check if the browser supports notifications
+        if (!("Notification" in window)) {
+          alert("This browser does not support desktop notification");
+        }else if (Notification.permission === "granted") {
+
+          var options = {
+            body: content,
+            icon: image
+          };
+
+          var notification = new Notification(title, options);
+        }
+      }
+
       var colors = [
         {r: 42, g: 201, b: 135},
         {r: 190, g: 0, b: 207},
@@ -160,15 +242,13 @@
         {r:0, g:200, b:213},
         {r:255, g:0, b:145},
       ];
-
       function SetColor(){
         var color = colors[randInt(0, colors.length-1)];
         document.getElementById("progessBar").style["background-color"] = "rgb("+color.r+", "+color.g+", "+color.b+")";
         document.getElementById("album").style["color"] = "rgb("+(color.r-20)+", "+(color.g-20)+", "+(color.b-20)+")";
       }
-
       function NewSong(songData){
-        document.getElementById("currently-playing").style.height = "0px";
+        document.getElementById("content").style.height = "0px";
 
         document.getElementById('cover').style.display = 'block';
 		    document.getElementById('cover').src = "";
@@ -191,16 +271,58 @@
 
           SetColor();
 
-          document.getElementById("currently-playing").style.height = "200px";
+          document.getElementById("content").style.height = "100px";
 
 
           RequestData(window.location.origin+'/stream/get/prevSongs', function(data){
-            console.log(data);
+            DrawPrevPlay(data);
           }, true);
         }, 1200);
       }
+      function DrawPrevPlay(data){
+        var list = document.getElementById('prev-played');
+        list.innerHTML = '';
+
+        var current = document.createElement('DIV');
+        current.id =  'song-'+song.id;
+        current.style['font-weight'] = 'bold';
+        current.style['padding-bottom'] = '15px';
+        if (song.album){
+          current.innerHTML = '<span style="">'+song.title+'</span>'+' - <span style="color:#656565">'+song.artist.join(', ').replace(';', ',')+'</span>' + ' ('+song.album+')';
+        }else{
+          current.innerHTML = '<span id="song-'+song.id+'" style="">'+song.title+'</span>'+' - <span style="color:#656565">'+song.artist.join(', ').replace(';', ',')+'</span>'
+        }
+        current.innerHTML += '  <span class="input" style="display:inline-block" id="'+current.id+'-input"'+'><span onclick="Like('+song.id+')">Like</span> <span>Dislike</span onclick="Dislike('+song.id+')"></span>';
+
+        list.appendChild(current);
+
+        for (let item of data){
+          var element = document.createElement('DIV');
+          element.id =  'song-'+item.id;
+          element.style['margin-bottom'] = '8px';
+          element.style['margin-left'] = '10px';
+
+          var html = '';
+          html = '<span>'+item.title+'</span>'+' - <span style="color:#656565">'+item.artist.join(', ').replace(';', ',')+'</span>';
+          if (item.album){
+            html += ' ('+item.album+')';
+          }
+
+          html += '  <span class="input" id="'+element.id+'-input"'+'><span onclick="Like('+element.id+')">Like</span> <span>Dislike</span onclick="Dislike('+element.id+')"></span>';
+
+          element.innerHTML = html;
+          list.appendChild(element);
+        }
+      }
+
+      var aimYScroll = 0;
+      var aimScrollDir = 0;
+      var prevTick = Date.now();
 
       function Render(){
+        var dt = Date.now()-prevTick;
+        prevTick = Date.now();
+
         var time = (Date.now()-song.startTime)/1000;
         var value = (time)/song.duration*100;
         if (value > 100){
@@ -224,45 +346,126 @@
 
         document.getElementById("time").innerHTML = mins+':'+time;
 
+
+        if (aimScrollDir != 0){
+          var value = window.pageYOffset+(dt*aimScrollDir);
+          if ((value+innerHeight >= aimYScroll && aimScrollDir == 1) || (value <= aimYScroll && aimScrollDir == -1)){
+            value = aimYScroll;
+            aimScrollDir = 0;
+          }
+          scrollTo(window.pageXOffset, value);
+          OnScroll()
+        }
+
         window.requestAnimationFrame(Render);
       }
-
       window.requestAnimationFrame(Render);
+    </script>
+    <script id="player-controls">
+      var pauseTimer;
+      var changing = false;
+
+      function PausePlay(){
+        if (changing){
+          return;
+        }
+
+        changing = true;
+
+        if (player.paused){
+          player.innerHTML = '<source src="stream.mp3" type="audio/mpeg">';
+          player.load();
+          document.getElementById('pause-display').style.height = '0px';
+          clearTimeout(pauseTimer);
+          player.play();
+        }else{
+          player.pause();
+          document.getElementById('pause-display').style.height = '100px';
+          setTimeout(function () {
+            player.removeAttribute('src');
+            player.load();
+          }, 5000);
+        }
+
+        setTimeout(function () {
+          changing = false;
+        }, 1000);
+      }
     </script>
   </head>
   <body style="padding: 0px; margin: 0px;" align="center">
-    <audio id="player" autoplay>
+    <audio id="player" preload="none">
       <source src="stream.mp3" type="audio/mpeg">
     </audio>
 
-    <div id="currently-playing" style="text-align: left; width: (115px + 40vw)" onclick="player.play()">
-      <img id="cover" style="float:left">
+    <div id="currently-playing" onclick="PausePlay()">
+      <div id="pause-display"><p style="margin-top: 25px">PAUSED</p></div>
       <div id="content">
+        <img id="cover" style="float:left">
         <div id="text" style="display: inline-block">
-          <span id="title" class="title">Template Title</span></br>
-          <span id="artist" class=artist>Template Artist</span>
-          <span id="album" class="album"> (Template Album)</span>
+          <div id="title" style="width:100%; height:37px;" class="title">Template Title</div></br>
+          <div id="artist" class=artist>Template Artist</div></br>
+          <div id="album" class="album"> (Template Album)</div>
         </div>
-        <div class="progress" style="display: inline-block; margin-top: 20px;">
-          <div id="progessBar" class="bar" style="width: 20%"></div>
+        <div id="timeline" class="progress" style="display: block; margin-top: 13px; margin-left: 118px; width: calc(100% - 118px)">
+          <div id="progessBar" class="bar" style="width: 20%;"></div>
         </div></br>
         <span id="time" style="display:none;">1:02</span>
       </div>
     </div>
 
-    <div id="prev-played" align="center">
+    <div id="prev-played" align="left">
+    </div>
+    <div id="pageJumper">
+      <div id="downArrow" style="display:block;"></div>
+      <div id="upArrow" style="display:none;"></div>
     </div>
     <script>
       var metaStream = Stream(window.location.origin+'/stream/metadata', function(meta){
-        console.log('chunk');
         if (JSON.stringify(song) != JSON.stringify(meta)){
           song = meta;
           NewSong();
+          document.getElementById('timeline').style['margin-left'] = "118px";
         }
       }, true);
       document.getElementById('cover').onerror = function(err){
         document.getElementById('cover').style.display = 'none';
+        document.getElementById('timeline').style['margin-left'] = "0px";
       };
+      document.getElementById('cover').onload = function(){
+        if (!document.hasFocus() && !player.paused){
+          if (album){
+            Notify(song.title, (song.artist.join(', ')+' ('+song.album+')'), window.location.origin+'/stream/get/image?'+Date.now());
+          }else{
+            Notify(song.title, (song.artist.join(', ')), window.location.origin+'/stream/get/image?'+Date.now());
+          }
+        }
+      }
+    </script>
+    <script>
+      function OnScroll(){
+        if (window.pageYOffset < innerHeight/2){
+          document.getElementById('downArrow').style.display = 'block';
+          document.getElementById('upArrow').style.display = 'none';
+        }else{
+          document.getElementById('upArrow').style.display = 'block';
+          document.getElementById('downArrow').style.display = 'none';
+        }
+      }
+
+      window.onscroll = function(){
+        OnScroll();
+      };
+      document.getElementById('pageJumper').onclick = function(){
+        if (window.pageYOffset < innerHeight/2){
+          aimYScroll = document.body.scrollHeight;
+          aimScrollDir = 1;
+        }else{
+          aimYScroll = 0;
+          aimScrollDir = -1;
+        }
+        OnScroll()
+      }
     </script>
   </body>
 </html>

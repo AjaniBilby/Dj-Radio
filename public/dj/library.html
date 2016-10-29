@@ -44,10 +44,10 @@
       }
     </style>
     <style>
-      .songList{
+      #container{
         overflow-y: auto;
         height: 100vh;
-        display: none;
+        display: block;
       }
     </style>
     <script id="network-functions">
@@ -111,8 +111,10 @@
     </script>
 
     <script>
-    var request;
+      var request;
       function Show(type){
+        document.getElementById('songs').innerHTML = 'Loading...';
+
         document.getElementById('album').style.display = 'none';
         document.getElementById('artist').style.display = 'none';
         document.getElementById('genre').style.display = 'none';
@@ -137,9 +139,11 @@
           for (let item of data){
             var element = document.createElement('DIV');
             element.innerHTML += item;
-            element.onclick = `SongSongsOfType(${type}, ${item})`;
             document.getElementById(type).appendChild(element);
-            //document.getElementById(type).innerHTML += '<div onclick="">'+item+'</div></br>'
+            element.onclick = function(evt){
+              console.log('click');
+              ShowSongsOfType(type, item)
+            };
           };
         }, true);
       };
@@ -150,11 +154,15 @@
         document.getElementById('title').style.display = 'none';
         document.getElementById('songs').style.display = 'block';
 
-        request = RequestData(location.origin+'/dj/list/'+type, function(data){
-          document.getElementById('songs').innerHTML = '';
+        RequestData(location.origin+'/dj/list/'+type+'/'+item, function(data){
+          document.getElementById('songs').innerHTML = 'Loading...';
           data.sort(function(a, b){
-            a = a.toLowerCase();
-            b = b.toLowerCase();
+            if (typeof(a) == 'string'){
+              a = a.toLowerCase();
+            }
+            if (typeof(b) == 'string'){
+              b = b.toLowerCase();
+            }
 
             if (a > b){
               return 1;
@@ -164,18 +172,32 @@
               return 0;
             }
           });
-          for (let item of data){
-            document.getElementById('songs').innerHTML += item+'</br>'
-          };
+
+          RequestData(location.origin+'/dj/song/meta/'+data.join(','), function(songData){
+            document.getElementById('songs').innerHTML = '';
+            for (let index in songData){
+              var element = document.createElement('DIV');
+              element.innerHTML += songData[index].title;
+              element.onclick = function(evt){
+                RequestData(location.origin+'/dj/request/'+data[index], function(){
+                  alert('Queued '+data[index]);
+                });
+              };
+              document.getElementById('songs').appendChild(element);
+            };
+          });
         }, true);
       };
     </script>
   </head>
   <body>
-    <div class="songList" id="album"></div>
-    <div class="songList" id="artist"></div>
-    <div class="songList" id="genre"></div>
-    <div class="songList" id="title"></div>
-    <div class="songList" id="songs"></div>
+    <button onclick="Show('title')">Title</button><button onclick="Show('album')">Album</button><button onclick="Show('artist')">Artist</button><button onclick="Show('genre')">Genre</button>
+    <div id="container">
+      <div id="album"></div>
+      <div id="artist"></div>
+      <div id="genre"></div>
+      <div id="title"></div>
+      <div id="songs"></div>
+    </div>
   </body>
 </html>
