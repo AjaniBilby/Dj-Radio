@@ -363,7 +363,7 @@ module.exports = {
 
     for (let key in library.info.no){
       if (library.info.no[key].indexOf(songId) != -1){
-        info.no.push(key);
+        info.no = key;
       }
     }
 
