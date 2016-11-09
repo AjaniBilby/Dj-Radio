@@ -6,7 +6,6 @@
     <style>
       body{
         margin: 0;
-        overflow: hidden;
       }
 
       p{
@@ -41,14 +40,18 @@
       table{
         font-family: arial, sans-serif;
         border-collapse: collapse;
-        width: 100%;
+        width: calc(100% - 4px);
+        margin-left: 2px;
+        margin-right: 2px;
       }
 
       td, th{
         border: 1px solid #dddddd;
         font-weight: normal;
         text-align: left;
-        padding: 0px;
+        padding: 1px;
+        padding-left: 5px;
+        padding-right: 5px;
       }
 
       tr:nth-child(even){
@@ -56,10 +59,31 @@
       }
     </style>
     <style>
+      #menu{
+        background-color: white;
+        height: 30px;
+        position: fixed;
+        top: 0px;
+        right: 0px;
+        left: 0px;
+      }
+      #menu .button{
+        display: inline-block;
+        font-family: arial, sans-serif;
+        font-size: 14pt;
+        padding: 5px;
+        margin-right: 5px;
+        cursor: pointer;
+        background-color: rgba(0,0,0,0);
+        transition: background-color 0.5s;
+      }
+      #menu .button:hover{
+        background-color: rgba(0,0,0,0.05);
+      }
+
       #container{
-        overflow-y: auto;
-        height: 100vh;
         display: block;
+        margin-top: 40px;
       }
 
       #popup-zone{
@@ -67,17 +91,36 @@
         position: absolute;
         right: 0px;
         bottom: 0px;
+        pointer-events: none;
         height: 100vh;
         width: 200px;
         vertical-align: bottom;
       }
-
       .popup{
         height: 0px;
         overflow-y: hidden;
         border-radius: 5px;
-        background-color: rgb(0, 71, 255);
+        color: rgb(200, 200, 200);
+        background-color: rgba(0, 0, 0, 0.5);
         transition: height 1s;
+      }
+
+      .list-section{
+        font-family: arial, sans-serif;
+        margin-bottom: 20px;
+        padding-left: 20px;
+      }
+      .list-section h3{
+        margin-bottom: 3px;
+        margin-left: -10px;
+      }
+      .list-section .item{
+        cursor: pointer;
+        background-color: rgba(0,0,0,0);
+        transition: background-color 0.1s;
+      }
+      .list-section .item:hover{
+        background-color: rgba(0, 194, 255, 0.60);
       }
 
       .song-row{
@@ -88,7 +131,43 @@
       .song-row:hover{
         background-color: rgb(130, 218, 255);
       }
+
+      .queuer{
+        cursor: pointer;
+        display: inline-block;
+        font-family: arial, sans-serif;
+        background-color: transparent;
+        padding: 5px;
+        border-radius: 2px;
+        transition: background-color 0.5s;
+      }
+      .queuer:hover{
+        background-color: rgba(0, 194, 255, 0.60);
+      }
     </style>
+    <script>
+      function Clamp(value = 0.5, min = 0, max = 1, loop = false){
+        if (value > max){
+          if (loop){
+            value = min;
+          }else{
+            value = max;
+          }
+        }else if (value < min){
+          if (loop){
+            value = max;
+          }else{
+            value = min;
+          }
+        }
+
+        if (!loop){
+          value = Clamp(value, min, max, loop);
+        }
+
+        return value;
+      }
+    </script>
     <script id="network-functions">
       function Stream(url, callback, objectify){
         var stream = new XMLHttpRequest();
@@ -152,17 +231,25 @@
     <script>
       var request;
       var cache = {
-        songSetData: {}
+        songSetData: {},
+        sorting: null,
+        rsort: false
       }
 
       function DrawSongs(data, title, sortBy){
+        document.getElementById('songs').innerHTML = '<h1 style="margin-left: 15px;">'+title+'</h1>';
+        document.getElementById('songs').innerHTML += '<div id="songInfo"></div>'
+
         document.getElementById('album').style.display = 'none';
         document.getElementById('artist').style.display = 'none';
         document.getElementById('genre').style.display = 'none';
         document.getElementById('title').style.display = 'none';
+        document.getElementById('playlist').style.display = 'none';
         document.getElementById('songs').style.display = 'block';
 
-        document.getElementById('songs').innerHTML = '<h1>'+title+'</h1>';
+        if (!data.length){
+          data = [data];
+        }
 
         data.sort(function(first, second){
           a = first[sortBy];
@@ -205,19 +292,36 @@
             return 1;
           }else if (a < b){
             return -1;
+          }else if (a = b){
+            if (first['title'] > second['title']){
+              return 1;
+            }else if (first['title'] > second['title']){
+              return -1;
+            }else{
+              return 1;
+            }
           }else{
             return 0;
           }
         });
 
+        if (sortBy == cache.sorting && !rsort){
+          data.reverse();
+          rsort = true;
+        }else{
+          cache.sorting = sortBy;
+          rsort = false;
+        }
+
         var table = document.createElement('TABLE');
-        table.innerHTML += `<tr>
-        <th onclick="DrawSongs(cache.songSetData, '${title}', 'title')"><h3>Title</h3></th>
-        <th onclick="DrawSongs(cache.songSetData, '${title}', 'album')"><h3>Album</h3></th>
-        <th onclick="DrawSongs(cache.songSetData, '${title}', 'artist')"><h3>Artist</h3></th>
-        <th onclick="DrawSongs(cache.songSetData, '${title}', 'genre')"><h3>Genre</h3></th>
-        <th onclick="DrawSongs(cache.songSetData, '${title}', 'no')"><h3>Track</h3></th>
-        </tr>`
+
+        var header = document.createElement('tr');
+        header.innerHTML = `<th onclick="DrawSongs(cache.songSetData, '${title}', 'title')"><h3>Title</h3></th>`
+        header.innerHTML += `<th onclick="DrawSongs(cache.songSetData, '${title}', 'album')"><h3>Album</h3></th>`
+        header.innerHTML += `<th onclick="DrawSongs(cache.songSetData, '${title}', 'artist')"><h3>Artist</h3></th>`
+        header.innerHTML += `<th onclick="DrawSongs(cache.songSetData, '${title}', 'genre')"><h3>Genre</h3></th>`
+        header.innerHTML += `<th onclick="DrawSongs(cache.songSetData, '${title}', 'no')"><h3>Track</h3></th>`
+        table.appendChild(header);
 
         for (let index in data){
           var row = document.createElement('tr');
@@ -230,18 +334,74 @@
           table.appendChild(row);
 
           row.onclick = function(evt){
-            var popup = document.createElement('div');
-            popup.className = 'popup';
-            document.getElementById('popup-zone').appendChild(popup);
-            popup.innerHTML = 'Queueing '+data[index].id;
-            popup.style.height = '50px';
+            var songInfo = document.getElementById('songInfo');
+            JumpTo('songInfo');
+            songInfo.innerHTML = 'Loading...';
 
-            RequestData(location.origin+'/dj/request/'+data[index].id, function(){
-              popup.innerHTML = 'Queued '+data[index].id;
-              setTimeout(function () {
-                popup.style.height = '0px';
-              }, 1000);
-            });
+            RequestData(location.origin+'/dj/song/meta/'+data[index].id, function(songMeta){
+              var element = document.createElement('div');
+              element.style.padding = '30px';
+
+              element.innerHTML = '<h3>'+songMeta.title+'</h3>';
+              element.innerHTML += '<span style="font-family: arial, sans-serif;">'+songMeta.artist.join(', ')+'</span>';
+              element.innerHTML += '<h4>'+songMeta.album+'</h4>';
+              element.innerHTML += '<span style="font-family: arial, sans-serif; font-size: 10pt;">'+songMeta.genre.join(', ')+'</span>';
+              element.innerHTML += '</br>';
+              element.innerHTML += '<br>';
+
+              var stats = document.createElement('stats');
+              stats.style['font-family'] = 'font-family: arial, sans-serif;';
+              stats.innerHTML = 'loading...';
+              var h = 0;
+              RequestData(location.origin+'/server/time', function(result){
+                h = result.split(' ')[4].split(':')[0];
+                stats.innerHTML = 'time';
+
+                RequestData(location.origin+'/dj/song/stats/'+data[index].id, function(item){
+                  stats.innerHTML = 'date';
+                  
+                  var time = h;
+
+                  var listeners = 1+ item[Clamp(time+5, 0, 23, true)].listeners/12 + item[Clamp(time+4, 0, 23, true)].listeners/10 + item[Clamp(time+3, 0, 23, true)].listeners/8 + item[Clamp(time+2, 0, 23, true)].listeners/4 + item[Clamp(time+1, 0, 23, true)].listeners/2 + item[Clamp(time, 0, 23, true)].listeners + item[Clamp(time-1, 0, 23, true)].listeners/2 + item[Clamp(time-2, 0, 23, true)].listeners/4 + item[Clamp(time-3, 0, 23, true)].listeners/8 + item[Clamp(time-4, 0, 23, true)].listeners/10 + item[Clamp(time-5, 0, 23, true)].listeners/12;
+                  listeners = listeners.toFixed(2);
+                  stats.innerHTML = 'Listeners: '+listeners;
+
+                  var likes = 1+ item[Clamp(time+5, 0, 23, true)].likes/12 + item[Clamp(time+4, 0, 23, true)].likes/10 + item[Clamp(time+3, 0, 23, true)].likes/8 + item[Clamp(time+2, 0, 23, true)].likes/4 + item[Clamp(time+1, 0, 23, true)].likes/2 + item[Clamp(time, 0, 23, true)].likes + item[Clamp(time-1, 0, 23, true)].likes/2 + item[Clamp(time-2, 0, 23, true)].likes/4 + item[Clamp(time-3, 0, 23, true)].likes/8 + item[Clamp(time-4, 0, 23, true)].likes/10 + item[Clamp(time-5, 0, 23, true)].likes/12;
+                  stats.innerHTML += 'Likes: '+likes;
+
+                  var dislikes = 1+ item[Clamp(time+5, 0, 23, true)].dislikes/12 + item[Clamp(time+4, 0, 23, true)].dislikes/10 + item[Clamp(time+3, 0, 23, true)].dislikes/8 + item[Clamp(time+2, 0, 23, true)].dislikes/4 + item[Clamp(time+1, 0, 23, true)].dislikes/2 + item[Clamp(time, 0, 23, true)].dislikes + item[Clamp(time-1, 0, 23, true)].dislikes/2 + item[Clamp(time-2, 0, 23, true)].dislikes/4 + item[Clamp(time-3, 0, 23, true)].dislikes/8 + item[Clamp(time-4, 0, 23, true)].dislikes/10 + item[Clamp(time-5, 0, 23, true)].dislikes/12;
+                  stats.innerHTML += 'Dislikes: '+dislikes;
+
+                  console.log(listeners, likes, dislikes);
+                }, true);
+              }, false)
+              element.appendChild(stats);
+              element.innerHTML += '</br>';
+              element.innerHTML += '<br>';
+
+              var queuer = document.createElement('div');
+              queuer.innerHTML = 'Queue';
+              queuer.className = 'queuer';
+              queuer.onclick = function(evt){
+                var popup = document.createElement('div');
+                popup.className = 'popup';
+                popup.align = 'center';
+                document.getElementById('popup-zone').appendChild(popup);
+                popup.innerHTML = 'Queueing '+data[index].id;
+                popup.style.height = '20px';
+
+                RequestData(location.origin+'/dj/request/'+data[index].id, function(){
+                  popup.innerHTML = 'Queued '+data[index].id;
+                  setTimeout(function () {
+                    popup.style.height = '0px';
+                  }, 1000);
+                });
+              };
+              element.appendChild(queuer);
+
+              songInfo.innerHTML = '';
+              songInfo.appendChild(element);
+            }, true);
           };
         };
 
@@ -255,42 +415,185 @@
         document.getElementById('genre').style.display = 'none';
         document.getElementById('title').style.display = 'none';
         document.getElementById('songs').style.display = 'none';
-        document.getElementById(type).style.display = 'block';
+        document.getElementById('playlist').style.display = 'none';
+        if (type == 'all'){
+          document.getElementById('songs').style.display = 'block';
+        }else{
+          document.getElementById(type).style.display = 'block';
+        }
 
-        request = RequestData(location.origin+'/dj/list/'+type, function(data){
-          document.getElementById(type).innerHTML = '';
-          data.sort(function(a, b){
-            a = a.toLowerCase();
-            b = b.toLowerCase();
+        if (type == 'all'){
+          RequestData(location.origin+'/dj/all/song/meta', function(data){
+            var sortedData = [];
 
-            if (a > b){
-              return 1;
-            }else if (a < b){
-              return -1;
-            }else{
-              return 0;
+            function Info(){
+              return {
+                title: '',
+                album: '',
+                genre: [],
+                artist: [],
+                id: null,
+                no: 0,
+              };
             }
-          });
-          for (let item of data){
-            var element = document.createElement('DIV');
-            element.innerHTML += item;
-            document.getElementById(type).appendChild(element);
-            element.onclick = function(evt){
-              console.log('click');
-              ShowSongsOfType(type, item)
+
+            console.log(data);
+
+            for (let key in data.title){
+              for (let index of data.title[key]){
+                if (typeof(sortedData[index]) != 'object'){
+                  sortedData[index] = new Info();
+                  sortedData[index].id = index;
+                }
+
+                sortedData[index].title = key;
+              }
+            }
+            for (let key in data.artist){
+              for (let index of data.artist[key]){
+                if (typeof(sortedData[index]) != 'object'){
+                  sortedData[index] = new Info();
+                }
+
+                sortedData[index].artist.push(key);
+              }
+            }
+            for (let key in data.album){
+              for (let index of data.album[key]){
+                if (typeof(sortedData[index]) != 'object'){
+                  sortedData[index] = new Info();
+                }
+
+                sortedData[index].album = key;
+              }
+            }
+            for (let key in data.genre){
+              for (let index of data.genre[key]){
+                if (typeof(sortedData[index]) != 'object'){
+                  sortedData[index] = new Info();
+                }
+
+                sortedData[index].genre.push(key);
+              }
+            }
+            for (let key in data.no){
+              for (let index of data.no[key]){
+                if (typeof(sortedData[index]) != 'object'){
+                  sortedData[index] = new Info();
+                }
+
+                sortedData[index].no = key;
+              }
+            }
+
+            cache.songSetData = sortedData;
+
+            DrawSongs(sortedData, 'All', 'title');
+
+          }, true);
+        }else if (type == 'playlist'){
+          document.getElementById('playlist').innerHTML = 'Loading...';
+
+          RequestData(location.origin+'/dj/playlist', function(data){
+            document.getElementById('playlist').innerHTML = '<h1 style="margin-left: 15px;">Playlist</h1>';
+
+            var table = document.createElement('TABLE');
+
+            var header = document.createElement('tr');
+            header.innerHTML = `<th><h3>Order</h3></th>`
+            header.innerHTML += `<th><h3>Title</h3></th>`
+            header.innerHTML += `<th><h3>Album</h3></th>`
+            header.innerHTML += `<th><h3>Artist</h3></th>`
+            header.innerHTML += `<th><h3>Genre</h3></th>`
+            header.innerHTML += `<th><h3>Track</h3></th>`
+            table.appendChild(header);
+
+            var order = 0;
+            for (let index in data){
+              order += 1;
+
+              var row = document.createElement('tr');
+              row.className = "song-row";
+              row.innerHTML += '<th>'+order+'</th>';
+              row.innerHTML += '<th>'+data[index].title+'</th>';
+              row.innerHTML += '<th>'+data[index].album+'</th>';
+              row.innerHTML += '<th>'+data[index].artist.join(', ')+'</th>';
+              row.innerHTML += '<th>'+data[index].genre.join(', ')+'</th>';
+              row.innerHTML += '<th>'+data[index].no+'</th>';
+              table.appendChild(row);
             };
-          };
-        }, true);
+
+            document.getElementById('playlist').appendChild(table);
+          })
+        }else{
+          var url = location.origin+'/dj/list/'+encodeURIComponent(type);
+          RequestData(url, function(data){
+            document.getElementById(type).innerHTML = '';
+
+            data.sort(function(a, b){
+              a = a.toLowerCase();
+              b = b.toLowerCase();
+
+              if (a > b){
+                return 1;
+              }else if (a < b){
+                return -1;
+              }else{
+                return 0;
+              }
+            });
+
+            while (data[0] == ''){
+              console.log(true);
+              data.splice(0,1)
+            }
+
+            var charZone = data[0].substr(0,1).toUpperCase();
+            var charZoneElm = document.createElement('DIV');
+            charZoneElm.id = 'sect-'+charZone;
+            charZoneElm.className = 'list-section';
+            charZoneElm.innerHTML = '<h3 id="anchor-'+charZone.toLowerCase()+'">'+charZone+'</h3></a>';
+
+
+            for (let item of data){
+              if (charZone != item.substr(0,1).toUpperCase()){
+                document.getElementById(type).appendChild(charZoneElm);
+
+                charZone = item.substr(0,1).toUpperCase();
+                var charZoneElm = document.createElement('DIV');
+                charZoneElm.id = 'sect-'+charZone;
+                charZoneElm.className = 'list-section';
+                charZoneElm.innerHTML = '<div style="height: 1px; width: calc(100vw - 35px); background-color: gray; margin-left: -12px;"></div>';
+                charZoneElm.innerHTML += '<h3 id="anchor-'+charZone.toLowerCase()+'">'+charZone+'</h3></a>';
+              }
+
+              var element = document.createElement('DIV');
+              element.className = 'item';
+              element.innerHTML += item;
+              element.onclick = function(evt){
+                console.log('click');
+                ShowSongsOfType(type, item)
+              };
+
+              charZoneElm.appendChild(element);
+            };
+
+            document.getElementById(type).appendChild(charZoneElm);
+          }, true);
+        }
       };
       function ShowSongsOfType(type, item){
+        document.getElementById('songs').innerHTML = '<h1>'+item+'</h1><br>Loading...';
+
         document.getElementById('album').style.display = 'none';
         document.getElementById('artist').style.display = 'none';
         document.getElementById('genre').style.display = 'none';
         document.getElementById('title').style.display = 'none';
+        document.getElementById('playlist').style.display = 'none';
         document.getElementById('songs').style.display = 'block';
 
-        RequestData(location.origin+'/dj/list/'+type+'/'+item, function(data){
-          document.getElementById('songs').innerHTML = '<h1>'+item+'</h1><br>Loading...';
+        var url = location.origin+'/dj/list/'+encodeURIComponent(type)+'/'+encodeURIComponent(item);
+        RequestData(url, function(data){
           data.sort(function(a, b){
             if (typeof(a) == 'string'){
               a = a.toLowerCase();
@@ -309,6 +612,10 @@
           });
 
           RequestData(location.origin+'/dj/song/meta/'+data.join(','), function(songData){
+            if (!songData.length){
+              songData = [songData];
+            }
+
             for (let item in songData){
               songData[item].id = data[item];
             }
@@ -325,16 +632,38 @@
           });
         }, true);
       };
+      function JumpTo(anchor){
+        var element = document.getElementById(anchor);
+        if (element != null){
+          var top = element.offsetTop;
+          console.log(top);
+          window.scrollTo(0, top);
+          return true;
+        }else{
+          return false;
+        }
+      }
     </script>
   </head>
   <body>
-    <button onclick="Show('title')">Title</button><button onclick="Show('album')">Album</button><button onclick="Show('artist')">Artist</button><button onclick="Show('genre')">Genre</button>
+    <div id="menu">
+      <div class="button" onclick="Show('title')">Title</div>
+      <div class="button" onclick="Show('album')">Album</div>
+      <div class="button" onclick="Show('artist')">Artist</div>
+      <div class="button" onclick="Show('genre')">Genre</div>
+      <div class="button" onclick="Show('all')">All</div>
+
+      <div class="button" onclick="Show('playlist')" style="float:right">Playlist</div>
+
+      <div style="height: 1px; width: 100%; background-color: gray; margin-top: -2px;"></div>
+    </div>
     <div id="container">
       <div id="album"></div>
       <div id="artist"></div>
       <div id="genre"></div>
       <div id="title"></div>
       <div id="songs"></div>
+      <div id="playlist"></div>
     </div>
     <div id="popup-zone"></div>
   </body>

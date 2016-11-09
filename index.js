@@ -48,6 +48,10 @@ liveStream.player.on('newSong', function(meta){
   metaStream.prevChunk = meta;
 });
 
+app.get('/server/time', function(req, res){
+  res.end(Date());
+});
+
 app.get('/stream.mp3', liveStream.pass, {fullBody: false});
 app.get('/stream/metadata', function(req, res){
   res.writeHead(200, {
@@ -181,6 +185,7 @@ app.get('/dj/list/*', function(req, res){
     'Content-Type': 'application/json'
   });
 
+  req.url = decodeURIComponent(req.url);
   var type = req.url.split('/')[3];
 
   if (req.url.split('/').length == 4){
@@ -189,7 +194,7 @@ app.get('/dj/list/*', function(req, res){
   }else{
     var item = req.url.split('/');
     item.splice(0,4);
-    item = decodeURI(item.join('/'));
+    item = item.join('/');
     res.end(JSON.stringify(liveStream.player.library.list(type, item)));
     return;
   }
@@ -220,6 +225,15 @@ app.get('/dj/song/meta/*', function(req, res){
     loop();
   }
 });
+app.get('/dj/song/stats/*', function(req, res){
+  var id = req.url.substr(15, req.url.length);
+
+  if (id == 'all'){
+    res.end(JSON.stringify(liveStream.player.library.index.library.stats.list));
+  }else{
+    res.end(JSON.stringify(liveStream.player.library.index.library.stats.list[id]));
+  }
+});
 app.get('/dj/song/picture/*', function(req, res){
   res.writeHead(200, {
     'Content-Type': passer.documentTypes.jpg,
@@ -238,7 +252,19 @@ app.get('/dj/playlist', function(req, res){
     'Content-Type': 'application/json'
   });
 
-  res.end(JSON.stringify(liveStream.player.playlist));
+  var data = [];
+  for (let file of liveStream.player.playlist){
+    var id = liveStream.player.library.index.library.files.indexOf(file);
+    var song = liveStream.player.library.getSongInfo(id)
+    song.id = id;
+    song.file = file;
+
+    console.log(file);
+    console.log(liveStream.player.library.index.library.files.indexOf(file));
+    data.push(song);
+  }
+
+  res.end(JSON.stringify(data));
   return;
 });
 app.get('/dj/all/song/meta', function(req, res){
