@@ -23,7 +23,7 @@ player.listeners = listeners;
 
 
 function BottleNeck(){
-  live.bottleNeck = new Throttle(16000); // 128000/8
+  live.bottleNeck = new Throttle(16384); // 128*1024/8
   live.bottleNeck.on('data', function(chunk){
     live.stream.write(chunk);
   });

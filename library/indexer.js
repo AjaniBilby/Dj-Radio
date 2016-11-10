@@ -208,7 +208,7 @@ function SongScan(settings){
     item = library.stats.list[item];
     var time = Time();
 
-    var listeners = 1+ item[Clamp(time+5, 0, 23, true)].listeners/12 + item[Clamp(time+4, 0, 23, true)].listeners/10 + item[Clamp(time+3, 0, 23, true)].listeners/8 + item[Clamp(time+2, 0, 23, true)].listeners/4 + item[Clamp(time+1, 0, 23, true)].listeners/2 + item[Clamp(time, 0, 23, true)].listeners + item[Clamp(time-1, 0, 23, true)].listeners/2 + item[Clamp(time-2, 0, 23, true)].listeners/4 + item[Clamp(time-3, 0, 23, true)].listeners/8 + item[Clamp(time-4, 0, 23, true)].listeners/10 + item[Clamp(time-5, 0, 23, true)].listeners/12;
+    var listeners = 1 + item[Clamp(time+5, 0, 23, true)].listeners/12 + item[Clamp(time+4, 0, 23, true)].listeners/10 + item[Clamp(time+3, 0, 23, true)].listeners/8 + item[Clamp(time+2, 0, 23, true)].listeners/4 + item[Clamp(time+1, 0, 23, true)].listeners/2 + item[Clamp(time, 0, 23, true)].listeners + item[Clamp(time-1, 0, 23, true)].listeners/2 + item[Clamp(time-2, 0, 23, true)].listeners/4 + item[Clamp(time-3, 0, 23, true)].listeners/8 + item[Clamp(time-4, 0, 23, true)].listeners/10 + item[Clamp(time-5, 0, 23, true)].listeners/12;
     listeners = listeners.toFixed(2);
 
     var likes = 1+ item[Clamp(time+5, 0, 23, true)].likes/12 + item[Clamp(time+4, 0, 23, true)].likes/10 + item[Clamp(time+3, 0, 23, true)].likes/8 + item[Clamp(time+2, 0, 23, true)].likes/4 + item[Clamp(time+1, 0, 23, true)].likes/2 + item[Clamp(time, 0, 23, true)].likes + item[Clamp(time-1, 0, 23, true)].likes/2 + item[Clamp(time-2, 0, 23, true)].likes/4 + item[Clamp(time-3, 0, 23, true)].likes/8 + item[Clamp(time-4, 0, 23, true)].likes/10 + item[Clamp(time-5, 0, 23, true)].likes/12;

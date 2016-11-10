@@ -59,6 +59,7 @@
       }
     </style>
     <style>
+
       #menu{
         background-color: white;
         height: 30px;
@@ -123,6 +124,13 @@
         background-color: rgba(0, 194, 255, 0.60);
       }
 
+      .songInfo{
+        margin: 20px;
+        padding: 10px;
+        background-color: rgba(0,0,0,0.05);
+        border-radius: 2px;
+      }
+
       .song-row{
         cursor: pointer;
         background-color: transparent;
@@ -136,7 +144,7 @@
         cursor: pointer;
         display: inline-block;
         font-family: arial, sans-serif;
-        background-color: transparent;
+        background-color: rgba(0, 0, 0, 0.2);
         padding: 5px;
         border-radius: 2px;
         transition: background-color 0.5s;
@@ -144,6 +152,10 @@
       .queuer:hover{
         background-color: rgba(0, 194, 255, 0.60);
       }
+      .queuer:active{
+        background-color: rgba(255, 207, 0, 0.6);
+      }
+
     </style>
     <script>
       function Clamp(value = 0.5, min = 0, max = 1, loop = false){
@@ -234,11 +246,19 @@
         songSetData: {},
         sorting: null,
         rsort: false
-      }
+      };
+
+      var sortByOrder = {
+        title: ['title', 'no', 'album', 'artist', 'genre'],
+        artist: ['artist', 'title', 'album', 'no', 'genre'],
+        album: ['album', 'no', 'title', 'artist', 'genre'],
+        no: ['no', 'album', 'title', 'artist', 'genre'],
+        genre: ['genre', 'artist', 'album', 'title', 'no']
+      };
 
       function DrawSongs(data, title, sortBy){
         document.getElementById('songs').innerHTML = '<h1 style="margin-left: 15px;">'+title+'</h1>';
-        document.getElementById('songs').innerHTML += '<div id="songInfo"></div>'
+        document.getElementById('songs').innerHTML += '<div id="songInfo"></div>';
 
         document.getElementById('album').style.display = 'none';
         document.getElementById('artist').style.display = 'none';
@@ -252,57 +272,53 @@
         }
 
         data.sort(function(first, second){
-          a = first[sortBy];
-          b = second[sortBy];
+          for (let method of sortByOrder[sortBy]){
+            a = first[method];
+            b = second[method];
 
-          if (typeof(a) == 'object'){
-            first[sortBy].sort(function(first, second){
-              if (a > b){
-                return 1;
-              }else if (a < b){
-                return -1;
-              }else{
-                return 0;
-              }
-            });
-            a = first[sortBy][0];
-          }
-          if (typeof(b) == 'object'){
-            second[sortBy].sort(function(first, second){
-              if (a > b){
-                return 1;
-              }else if (a < b){
-                return -1;
-              }else{
-                return 0;
-              }
-            });
-            b = second[sortBy][0];
-          }
-
-          //Make sure that all numbers are numbers not strings
-          if (!isNaN(a)){
-            a = parseFloat(a);
-          }
-          if (!isNaN(a)){
-            b = parseFloat(b);
-          }
-
-          if (a > b){
-            return 1;
-          }else if (a < b){
-            return -1;
-          }else if (a = b){
-            if (first['title'] > second['title']){
-              return 1;
-            }else if (first['title'] > second['title']){
-              return -1;
-            }else{
-              return 1;
+            //If a/b is either genre / artist pick the first artist to use to compare
+            if (typeof(a) == 'object'){
+              a.sort(function(first, second){
+                if (first > second){
+                  return 1;
+                }else if (first < second){
+                  return -1;
+                }else{
+                  return 0;
+                }
+              });
+              a = a[0];
             }
-          }else{
-            return 0;
+            if (typeof(b) == 'object'){
+              b.sort(function(first, second){
+                if (first > second){
+                  return 1;
+                }else if (first < second){
+                  return -1;
+                }else{
+                  return 0;
+                }
+              });
+              b = b[0];
+            }
+
+            //Make sure that all numbers are numbers not strings
+            if (!isNaN(a)){
+              a = parseFloat(a);
+            }
+            if (!isNaN(a)){
+              b = parseFloat(b);
+            }
+
+            if (a > b){
+              return 1;
+            }else if (a < b){
+              return -1;
+            }
           }
+
+          //If the search has gone though all possible methods then send equal
+          return 0;
         });
 
         if (sortBy == cache.sorting && !rsort){
@@ -316,11 +332,11 @@
         var table = document.createElement('TABLE');
 
         var header = document.createElement('tr');
-        header.innerHTML = `<th onclick="DrawSongs(cache.songSetData, '${title}', 'title')"><h3>Title</h3></th>`
-        header.innerHTML += `<th onclick="DrawSongs(cache.songSetData, '${title}', 'album')"><h3>Album</h3></th>`
-        header.innerHTML += `<th onclick="DrawSongs(cache.songSetData, '${title}', 'artist')"><h3>Artist</h3></th>`
-        header.innerHTML += `<th onclick="DrawSongs(cache.songSetData, '${title}', 'genre')"><h3>Genre</h3></th>`
-        header.innerHTML += `<th onclick="DrawSongs(cache.songSetData, '${title}', 'no')"><h3>Track</h3></th>`
+        header.innerHTML = `<th onclick="DrawSongs(cache.songSetData, '${title}', 'title')"><h3>Title</h3></th>`;
+        header.innerHTML += `<th onclick="DrawSongs(cache.songSetData, '${title}', 'album')"><h3>Album</h3></th>`;
+        header.innerHTML += `<th onclick="DrawSongs(cache.songSetData, '${title}', 'artist')"><h3>Artist</h3></th>`;
+        header.innerHTML += `<th onclick="DrawSongs(cache.songSetData, '${title}', 'genre')"><h3>Genre</h3></th>`;
+        header.innerHTML += `<th onclick="DrawSongs(cache.songSetData, '${title}', 'no')"><h3>Track</h3></th>`;
         table.appendChild(header);
 
         for (let index in data){
@@ -340,7 +356,7 @@
 
             RequestData(location.origin+'/dj/song/meta/'+data[index].id, function(songMeta){
               var element = document.createElement('div');
-              element.style.padding = '30px';
+              element.className = 'songInfo';
 
               element.innerHTML = '<h3>'+songMeta.title+'</h3>';
               element.innerHTML += '<span style="font-family: arial, sans-serif;">'+songMeta.artist.join(', ')+'</span>';
@@ -349,32 +365,38 @@
               element.innerHTML += '</br>';
               element.innerHTML += '<br>';
 
-              var stats = document.createElement('stats');
-              stats.style['font-family'] = 'font-family: arial, sans-serif;';
+              var stats = document.createElement('div');
+              stats.id = 'stats';
+              stats.style['font-family'] = 'arial, sans-serif;';
               stats.innerHTML = 'loading...';
+
               var h = 0;
               RequestData(location.origin+'/server/time', function(result){
+                var stats = document.getElementById('stats');
+
                 h = result.split(' ')[4].split(':')[0];
+                if (h[0] == '0'){
+                  h = h.slice(1);
+                }
                 stats.innerHTML = 'time';
 
                 RequestData(location.origin+'/dj/song/stats/'+data[index].id, function(item){
-                  stats.innerHTML = 'date';
-                  
                   var time = h;
 
-                  var listeners = 1+ item[Clamp(time+5, 0, 23, true)].listeners/12 + item[Clamp(time+4, 0, 23, true)].listeners/10 + item[Clamp(time+3, 0, 23, true)].listeners/8 + item[Clamp(time+2, 0, 23, true)].listeners/4 + item[Clamp(time+1, 0, 23, true)].listeners/2 + item[Clamp(time, 0, 23, true)].listeners + item[Clamp(time-1, 0, 23, true)].listeners/2 + item[Clamp(time-2, 0, 23, true)].listeners/4 + item[Clamp(time-3, 0, 23, true)].listeners/8 + item[Clamp(time-4, 0, 23, true)].listeners/10 + item[Clamp(time-5, 0, 23, true)].listeners/12;
+                  var listeners = item[Clamp(time+5, 0, 23, true)].listeners/12 + item[Clamp(time+4, 0, 23, true)].listeners/10 + item[Clamp(time+3, 0, 23, true)].listeners/8 + item[Clamp(time+2, 0, 23, true)].listeners/4 + item[Clamp(time+1, 0, 23, true)].listeners/2 + item[Clamp(time, 0, 23, true)].listeners + item[Clamp(time-1, 0, 23, true)].listeners/2 + item[Clamp(time-2, 0, 23, true)].listeners/4 + item[Clamp(time-3, 0, 23, true)].listeners/8 + item[Clamp(time-4, 0, 23, true)].listeners/10 + item[Clamp(time-5, 0, 23, true)].listeners/12;
                   listeners = listeners.toFixed(2);
-                  stats.innerHTML = 'Listeners: '+listeners;
 
-                  var likes = 1+ item[Clamp(time+5, 0, 23, true)].likes/12 + item[Clamp(time+4, 0, 23, true)].likes/10 + item[Clamp(time+3, 0, 23, true)].likes/8 + item[Clamp(time+2, 0, 23, true)].likes/4 + item[Clamp(time+1, 0, 23, true)].likes/2 + item[Clamp(time, 0, 23, true)].likes + item[Clamp(time-1, 0, 23, true)].likes/2 + item[Clamp(time-2, 0, 23, true)].likes/4 + item[Clamp(time-3, 0, 23, true)].likes/8 + item[Clamp(time-4, 0, 23, true)].likes/10 + item[Clamp(time-5, 0, 23, true)].likes/12;
-                  stats.innerHTML += 'Likes: '+likes;
+                  var likes = item[Clamp(time+5, 0, 23, true)].likes/12 + item[Clamp(time+4, 0, 23, true)].likes/10 + item[Clamp(time+3, 0, 23, true)].likes/8 + item[Clamp(time+2, 0, 23, true)].likes/4 + item[Clamp(time+1, 0, 23, true)].likes/2 + item[Clamp(time, 0, 23, true)].likes + item[Clamp(time-1, 0, 23, true)].likes/2 + item[Clamp(time-2, 0, 23, true)].likes/4 + item[Clamp(time-3, 0, 23, true)].likes/8 + item[Clamp(time-4, 0, 23, true)].likes/10 + item[Clamp(time-5, 0, 23, true)].likes/12;
 
-                  var dislikes = 1+ item[Clamp(time+5, 0, 23, true)].dislikes/12 + item[Clamp(time+4, 0, 23, true)].dislikes/10 + item[Clamp(time+3, 0, 23, true)].dislikes/8 + item[Clamp(time+2, 0, 23, true)].dislikes/4 + item[Clamp(time+1, 0, 23, true)].dislikes/2 + item[Clamp(time, 0, 23, true)].dislikes + item[Clamp(time-1, 0, 23, true)].dislikes/2 + item[Clamp(time-2, 0, 23, true)].dislikes/4 + item[Clamp(time-3, 0, 23, true)].dislikes/8 + item[Clamp(time-4, 0, 23, true)].dislikes/10 + item[Clamp(time-5, 0, 23, true)].dislikes/12;
-                  stats.innerHTML += 'Dislikes: '+dislikes;
+                  var dislikes = item[Clamp(time+5, 0, 23, true)].dislikes/12 + item[Clamp(time+4, 0, 23, true)].dislikes/10 + item[Clamp(time+3, 0, 23, true)].dislikes/8 + item[Clamp(time+2, 0, 23, true)].dislikes/4 + item[Clamp(time+1, 0, 23, true)].dislikes/2 + item[Clamp(time, 0, 23, true)].dislikes + item[Clamp(time-1, 0, 23, true)].dislikes/2 + item[Clamp(time-2, 0, 23, true)].dislikes/4 + item[Clamp(time-3, 0, 23, true)].dislikes/8 + item[Clamp(time-4, 0, 23, true)].dislikes/10 + item[Clamp(time-5, 0, 23, true)].dislikes/12;
 
-                  console.log(listeners, likes, dislikes);
+                  stats.innerHTML = `
+                  Listeners: ${listeners}<br>
+                  Likes: ${likes}<br>
+                  Dislikes: ${dislikes}<br>
+                  `;
                 }, true);
-              }, false)
+              }, false);
               element.appendChild(stats);
               element.innerHTML += '</br>';
               element.innerHTML += '<br>';
@@ -403,7 +425,7 @@
               songInfo.appendChild(element);
             }, true);
           };
-        };
+        }
 
         document.getElementById('songs').appendChild(table);
       }
@@ -436,8 +458,6 @@
                 no: 0,
               };
             }
-
-            console.log(data);
 
             for (let key in data.title){
               for (let index of data.title[key]){
@@ -496,21 +516,21 @@
 
           RequestData(location.origin+'/dj/playlist', function(data){
             document.getElementById('playlist').innerHTML = '<h1 style="margin-left: 15px;">Playlist</h1>';
+            document.getElementById('playlist').innerHTML += '<div id="songInfo"></div>';
 
             var table = document.createElement('TABLE');
 
             var header = document.createElement('tr');
-            header.innerHTML = `<th><h3>Order</h3></th>`
-            header.innerHTML += `<th><h3>Title</h3></th>`
-            header.innerHTML += `<th><h3>Album</h3></th>`
-            header.innerHTML += `<th><h3>Artist</h3></th>`
-            header.innerHTML += `<th><h3>Genre</h3></th>`
-            header.innerHTML += `<th><h3>Track</h3></th>`
+            header.innerHTML = `<th><h3>Order</h3></th>`;
+            header.innerHTML += `<th><h3>Title</h3></th>`;
+            header.innerHTML += `<th><h3>Album</h3></th>`;
+            header.innerHTML += `<th><h3>Artist</h3></th>`;
+            header.innerHTML += `<th><h3>Genre</h3></th>`;
+            header.innerHTML += `<th><h3>Track</h3></th>`;
             table.appendChild(header);
 
             var order = 0;
             for (let index in data){
-              order += 1;
 
               var row = document.createElement('tr');
               row.className = "song-row";
@@ -520,11 +540,74 @@
               row.innerHTML += '<th>'+data[index].artist.join(', ')+'</th>';
               row.innerHTML += '<th>'+data[index].genre.join(', ')+'</th>';
               row.innerHTML += '<th>'+data[index].no+'</th>';
+
+              row.onclick = function(evt){
+                var songInfo = document.getElementById('songInfo');
+                JumpTo('songInfo');
+                songInfo.innerHTML = 'Loading...';
+
+                RequestData(location.origin+'/dj/song/meta/'+data[index].id, function(songMeta){
+                  var element = document.createElement('div');
+                  element.className = 'songInfo';
+
+                  element.innerHTML = '<h3>'+songMeta.title+'</h3>';
+                  element.innerHTML += '<span style="font-family: arial, sans-serif;">'+songMeta.artist.join(', ')+'</span>';
+                  element.innerHTML += '<h4>'+songMeta.album+'</h4>';
+                  element.innerHTML += '<span style="font-family: arial, sans-serif; font-size: 10pt;">'+songMeta.genre.join(', ')+'</span>';
+                  element.innerHTML += '</br>';
+                  element.innerHTML += '<br>';
+
+                  var stats = document.createElement('div');
+                  stats.id = 'stats';
+                  stats.style['font-family'] = 'arial, sans-serif;';
+                  stats.innerHTML = 'loading...';
+
+                  stats.innerHTML = 'bad content...';
+                  var h = 0;
+                  RequestData(location.origin+'/server/time', function(result){
+                    var stats = document.getElementById('stats');
+
+                    h = result.split(' ')[4].split(':')[0];
+                    if (h[0] == '0'){
+                      h = h.slice(1);
+                    }
+                    stats.innerHTML = 'time';
+
+                    RequestData(location.origin+'/dj/song/stats/'+data[index].id, function(item){
+                      stats.innerHTML = 'date';
+
+                      var time = h;
+
+                      var listeners = item[Clamp(time+5, 0, 23, true)].listeners/12 + item[Clamp(time+4, 0, 23, true)].listeners/10 + item[Clamp(time+3, 0, 23, true)].listeners/8 + item[Clamp(time+2, 0, 23, true)].listeners/4 + item[Clamp(time+1, 0, 23, true)].listeners/2 + item[Clamp(time, 0, 23, true)].listeners + item[Clamp(time-1, 0, 23, true)].listeners/2 + item[Clamp(time-2, 0, 23, true)].listeners/4 + item[Clamp(time-3, 0, 23, true)].listeners/8 + item[Clamp(time-4, 0, 23, true)].listeners/10 + item[Clamp(time-5, 0, 23, true)].listeners/12;
+                      listeners = listeners.toFixed(2);
+
+                      var likes = item[Clamp(time+5, 0, 23, true)].likes/12 + item[Clamp(time+4, 0, 23, true)].likes/10 + item[Clamp(time+3, 0, 23, true)].likes/8 + item[Clamp(time+2, 0, 23, true)].likes/4 + item[Clamp(time+1, 0, 23, true)].likes/2 + item[Clamp(time, 0, 23, true)].likes + item[Clamp(time-1, 0, 23, true)].likes/2 + item[Clamp(time-2, 0, 23, true)].likes/4 + item[Clamp(time-3, 0, 23, true)].likes/8 + item[Clamp(time-4, 0, 23, true)].likes/10 + item[Clamp(time-5, 0, 23, true)].likes/12;
+
+                      var dislikes = item[Clamp(time+5, 0, 23, true)].dislikes/12 + item[Clamp(time+4, 0, 23, true)].dislikes/10 + item[Clamp(time+3, 0, 23, true)].dislikes/8 + item[Clamp(time+2, 0, 23, true)].dislikes/4 + item[Clamp(time+1, 0, 23, true)].dislikes/2 + item[Clamp(time, 0, 23, true)].dislikes + item[Clamp(time-1, 0, 23, true)].dislikes/2 + item[Clamp(time-2, 0, 23, true)].dislikes/4 + item[Clamp(time-3, 0, 23, true)].dislikes/8 + item[Clamp(time-4, 0, 23, true)].dislikes/10 + item[Clamp(time-5, 0, 23, true)].dislikes/12;
+
+                      stats.innerHTML = `
+                      Listeners: ${listeners}<br>
+                      Likes: ${likes}<br>
+                      Dislikes: ${dislikes}<br>
+                      `;
+                    }, true);
+                  }, false);
+                  element.appendChild(stats);
+                  element.innerHTML += '</br>';
+                  element.innerHTML += '<br>';
+
+                  songInfo.innerHTML = '';
+                  songInfo.appendChild(element);
+                }, true);
+              };
+
               table.appendChild(row);
-            };
+
+              order += 1;
+            }
 
             document.getElementById('playlist').appendChild(table);
-          })
+          }, true);
         }else{
           var url = location.origin+'/dj/list/'+encodeURIComponent(type);
           RequestData(url, function(data){
@@ -543,9 +626,8 @@
               }
             });
 
-            while (data[0] == ''){
-              console.log(true);
-              data.splice(0,1)
+            while (data[0] === ''){
+              data.splice(0,1);
             }
 
             var charZone = data[0].substr(0,1).toUpperCase();
@@ -560,7 +642,7 @@
                 document.getElementById(type).appendChild(charZoneElm);
 
                 charZone = item.substr(0,1).toUpperCase();
-                var charZoneElm = document.createElement('DIV');
+                charZoneElm = document.createElement('DIV');
                 charZoneElm.id = 'sect-'+charZone;
                 charZoneElm.className = 'list-section';
                 charZoneElm.innerHTML = '<div style="height: 1px; width: calc(100vw - 35px); background-color: gray; margin-left: -12px;"></div>';
@@ -571,17 +653,16 @@
               element.className = 'item';
               element.innerHTML += item;
               element.onclick = function(evt){
-                console.log('click');
-                ShowSongsOfType(type, item)
+                ShowSongsOfType(type, item);
               };
 
               charZoneElm.appendChild(element);
-            };
+            }
 
             document.getElementById(type).appendChild(charZoneElm);
           }, true);
         }
-      };
+      }
       function ShowSongsOfType(type, item){
         document.getElementById('songs').innerHTML = '<h1>'+item+'</h1><br>Loading...';
 
@@ -631,13 +712,12 @@
             DrawSongs(songData, item, sortBy);
           });
         }, true);
-      };
+      }
       function JumpTo(anchor){
         var element = document.getElementById(anchor);
-        if (element != null){
+        if (element !== null){
           var top = element.offsetTop;
-          console.log(top);
-          window.scrollTo(0, top);
+          window.scrollTo(0, top-40);
           return true;
         }else{
           return false;
@@ -654,6 +734,7 @@
       <div class="button" onclick="Show('all')">All</div>
 
       <div class="button" onclick="Show('playlist')" style="float:right">Playlist</div>
+      <div class="button" onclick="location.pathname = '/'" style="float:right">Player</div>
 
       <div style="height: 1px; width: 100%; background-color: gray; margin-top: -2px;"></div>
     </div>

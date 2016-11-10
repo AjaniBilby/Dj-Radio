@@ -108,7 +108,6 @@
         height: 500px;
         text-align: left;
         margin-left: 15px;
-        float: right;
         display: inline-block;
       }
 
@@ -356,6 +355,7 @@
           OnScroll()
         }
 
+
         window.requestAnimationFrame(Render);
       }
       window.requestAnimationFrame(Render);
@@ -371,23 +371,17 @@
 
         changing = true;
 
-        if (player.paused || player.volume == 0){
+        if (player.paused){
           document.getElementById('pause-display').style.height = '0px';
-          player.volume = 1;
-          if (player.paused){
-            if (!document.getElementById("audio-source")){
-              player.innerHTML = '<source id="audio-source" src="stream.mp3" type="audio/mpeg">';
-            }
-            clearTimeout(pauseTimer);
-            player.play();
+          if (!document.getElementById("audio-source")){
+            player.innerHTML = '<source id="audio-source" src="stream.mp3" type="audio/mpeg">';
           }
+          clearTimeout(pauseTimer);
+          player.play();
         }else{
-          player.volume = 0;
           document.getElementById('pause-display').style.height = '100px';
-          setTimeout(function () {
-            player.removeAttribute('src');
-            player.load();
-          }, 5000);
+          player.removeAttribute('src');
+          player.load();
         }
 
         setTimeout(function () {
@@ -423,6 +417,8 @@
       <div id="downArrow" style="display:block;"></div>
       <div id="upArrow" style="display:none;"></div>
     </div>
+
+    <div style="width 100%; margin: 5px;"><a style="color:gray; font-family: arial;" href="/dj/library">Dj Pannel</a></div>
     <script>
       var metaStream = Stream(window.location.origin+'/stream/metadata', function(meta){
         if (JSON.stringify(song) != JSON.stringify(meta)){
