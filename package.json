@@ -9,11 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "passer": "^1.0.0",
     "lame": "^1.2.4",
     "mass-random": "^1.0.3",
     "musicmetadata": "^2.0.4",
     "object-manipulation": "^1.0.0",
+    "passer": "^1.0.0",
     "throttle": "^1.0.3"
   }
 }

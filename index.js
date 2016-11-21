@@ -175,9 +175,7 @@ app.get('/dislike', function(req, res){
 app.get('/dj/request/*', function(req, res){
   var songId = req.url.substr(12);
 
-  liveStream.player.queue(liveStream.player.library.index.library.files[songId]);
-
-  res.end("true");
+  res.end(String(liveStream.player.queue(liveStream.player.library.index.library.files[songId])));
   return;
 });
 app.get('/dj/list/*', function(req, res){
@@ -255,12 +253,10 @@ app.get('/dj/playlist', function(req, res){
   var data = [];
   for (let file of liveStream.player.playlist){
     var id = liveStream.player.library.index.library.files.indexOf(file);
-    var song = liveStream.player.library.getSongInfo(id)
+    var song = liveStream.player.library.getSongInfo(id);
     song.id = id;
     song.file = file;
 
-    console.log(file);
-    console.log(liveStream.player.library.index.library.files.indexOf(file));
     data.push(song);
   }
 

@@ -103,10 +103,11 @@
       }
 
       #prev-played{
-        padding: 15px;
-        margin-top: calc(50vh + 100px);
+        position: relative;
+        top: 100vh;
         width: 90vw;
         height: 500px;
+        padding: 15px;
         text-align: left;
         padding-left: 15px;
         display: inline-block;
@@ -128,8 +129,8 @@
         overflow-y: hidden;
         position: relative;
         margin-top: calc(50vh - 100px);
+        margin-left: calc(10vw);
         width: 80vw;
-        height: 100px;
         align-content: center;
         vertical-align: middle;
         display: inline-block;
@@ -139,9 +140,10 @@
       }
 
       #content{
+        height: 0px;
         display: block;
-        height: 100px;
         overflow-y: hidden;
+        transition: height 1s;
       }
       #text{
         display: inline-block;
@@ -157,6 +159,7 @@
         overflow-x: hidden;
         overflow-y: hidden;
         transition: width 0.4s;
+        transition: height 0.4s;
       }
       #timeline{
         display: inline-block;
@@ -195,21 +198,36 @@
         font-size: 12pt;
       }
 
+      @media only screen and (min-width: 480px){
+        #currently-playing{
+          height: 100px;
+        }
+      }
+
       @media only screen and (max-width: 480px){
         #currently-playing{
-          height: calc(100px + 80vw);
           width: calc(100vw - 20px);
+          margin-left: 0px;
         }
 
         #text{
-          width: calc(100%);
+          width: 100%;
           transition: width 0.4s;
         }
 
         #cover{
-          width: 0px;
-          padding: 0px;
+          display: block;
           margin: 0px;
+          margin-left: 10px;
+          width: calc(100vw - 40px);
+          height: calc(100vw - 40px);
+          padding: 0px;
+        }
+
+        #content{
+          display: inline-block;
+          width: calc(100vw - 40px);
+          margin-left: 15px;
         }
 
         #timeline{
@@ -218,8 +236,7 @@
 
         #prev-played{
           padding-left: 10px;
-          padding-right: 10px;
-          width: 100vw;
+          width: calc(100vw - 50px);
         }
       }
     </style>
@@ -281,6 +298,7 @@
       ];
       function SetColor(input){
         var color;
+        var preset = false;
         if (typeof(input) == 'object' && typeof(input.r) == 'number' && typeof(input.g) == 'number' && typeof(input.b) == 'number'){
           input.r = Math.round(input.r);
           input.g = Math.round(input.g);
@@ -288,16 +306,24 @@
           color = input;
         }else if (typeof(input) == 'number'){
           color = colors[input];
+          preset = true;
         }else{
           color = colors[randInt(0, colors.length-1)];
+          preset = true;
         }
 
         document.getElementById("progessBar").style["background-color"] = "rgb("+color.r+", "+color.g+", "+color.b+")";
         document.getElementById("album").style["color"] = "rgb("+(color.r-20)+", "+(color.g-20)+", "+(color.b-20)+")";
-        document.body.style["background-color"] = "rgba("+(color.r)+", "+(color.g)+", "+(color.b)+", 0.1)";
+        if (preset){
+          document.body.style["background-color"] = "white";
+        }else{
+          document.body.style["background-color"] = "rgba("+(color.r)+", "+(color.g)+", "+(color.b)+", 0.1)";
+        }
       }
       function NewSong(songData){
         document.getElementById("content").style.height = "0px";
+
+        cover.style.display = 'block';
 
         cover.src = "/stream/get/image?"+Date.now();
         cover.onerror = function(){
@@ -465,6 +491,7 @@
 
         if (player.paused){
           document.getElementById('pause-display').style.height = '0px';
+          document.getElementById('content').style.height = '100px';
           if (!document.getElementById("audio-source")){
             player.innerHTML = '<source id="audio-source" src="stream.mp3" type="audio/mpeg">';
           }
@@ -472,6 +499,7 @@
           player.play();
         }else{
           document.getElementById('pause-display').style.height = '100px';
+          document.getElementById('content').style.height = '0px';
           player.removeAttribute('src');
           player.load();
         }
@@ -482,16 +510,20 @@
       }
     </script>
   </head>
-  <body style="padding: 0px; margin: 0px;" align="center">
+  <body style="padding: 0px; margin: 0px;">
     <audio id="player" preload="none">
       <source src="stream.mp3" type="audio/mpeg">
     </audio>
 
+    <div id="bottom" style="float: right;">
+      <a style="color:gray; font-family: arial;" href="/dj/library">Dj Pannel</a>
+    </div>
+
     <div id="currently-playing" onclick="PausePlay()">
       <div id="pause-display"><p style="margin-top: 25px">PAUSED</p></div>
+      <img id="cover" class="cover"></img>
       <div id="content">
         <canvas id="canvas" style="display: none;" width="100" height="100"></canvas>
-        <img id="cover" class="cover"></img>
         <div id="text">
           <div id="title" class="title">Template Title</div></br>
           <div id="artist" class=artist>Template Artist</div></br>
@@ -511,7 +543,6 @@
       <div id="upArrow" style="display:none;"></div>
     </div>
 
-    <div style="width 100%; margin: 5px;"><a style="color:gray; font-family: arial;" href="/dj/library">Dj Pannel</a></div>
     <script id="streams">
       var canvas = document.getElementById('canvas');
       var context = canvas.getContext('2d');

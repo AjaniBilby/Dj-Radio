@@ -1,7 +1,7 @@
 var fs = require('fs');
 var mm = require('musicmetadata');
 var random = require('mass-random');
-var object =require("object-manipulation");
+var object = new require("object-manipulation");
 
 var userHome = process.env[(process.platform == 'win32') ? 'USERPROFILE' : 'HOME'];
 
@@ -143,7 +143,6 @@ function Load(){
     for (let index in data.stats.list){
       library.stats.list[data.files.indexOf(data.files[index])] = data.stats.list[index];
       if (data.stats.list[index][Time()].listeners !== 0){
-        console.log(index, data.stats.list[index][Time()]);
       }
     }
   }
@@ -190,7 +189,11 @@ function SongScan(settings){
         if (extention == "mp3"){
           var id = object.firstUndefined(library.files, library.files.length+3) || library.files.length;
           library.files[id] = address+file;
-          library.stats.list[id] = new SongStats();
+          if (typeof(library.stats.list[id]) == 'object'){
+            library.stats.list[id] = object.merg(new SongStats(), library.stats.list[id]);
+          }else{
+            library.stats.list[id] = new SongStats();
+          }
 
           unscanned.push(library.files[id]);
         }

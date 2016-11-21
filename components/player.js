@@ -3,6 +3,7 @@ var mm = require('musicmetadata');
 var Stream = require('./stream.js');
 
 var lame = require('lame');
+var encoder;
 var decoder;
 var output;
 
@@ -104,6 +105,12 @@ module.exports = {
     }
 
     playlist.push(file);
+
+    if (typeof(file) == 'string' && file != undefined){
+      return true;
+    }else{
+      return false;
+    }
   },
   library: library,
   on: function(type, callback){
