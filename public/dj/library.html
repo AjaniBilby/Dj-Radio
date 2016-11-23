@@ -65,12 +65,12 @@
     <style>
 
       #menu{
-        background-color: white;
-        height: 34px;
+        padding-left: 5px;
+        padding-right: 5px;
         position: fixed;
         top: 0px;
-        right: 0px;
         left: 0px;
+        background-color: white;
         box-shadow: -4px 0px 40px black;
       }
       #menu .button{
@@ -84,6 +84,28 @@
         transition: background-color 0.5s;
       }
       #menu .button:hover{
+        background-color: rgba(0,0,0,0.05);
+      }
+      #subMenu{
+        padding-left: 5px;
+        padding-right: 5px;
+        position: fixed;
+        bottom: 0px;
+        left: 0px;
+        background-color: white;
+        box-shadow: 0px 0px 40px black;
+      }
+      #subMenu .button{
+        display: inline-block;
+        font-family: arial, sans-serif;
+        font-size: 14pt;
+        padding: 5px;
+        margin-right: 5px;
+        cursor: pointer;
+        background-color: rgba(0,0,0,0);
+        transition: background-color 0.5s;
+      }
+      #subMenu .button:hover{
         background-color: rgba(0,0,0,0.05);
       }
 
@@ -864,10 +886,11 @@
       <div class="button" onclick="Show('genre')">Genre</div>
       <div class="button" onclick="Show('all')">All</div>
 
+      <!-- <div style="height: 1px; width: 100%; background-color: gray; margin-top: -2px;"></div> -->
+    </div>
+    <div id="subMenu">
       <div class="button" onclick="Show('playlist')" style="float:right">Playlist</div>
       <div class="button" onclick="location.pathname = '/'" style="float:right">Player</div>
-
-      <!-- <div style="height: 1px; width: 100%; background-color: gray; margin-top: -2px;"></div> -->
     </div>
     <div id="container">
       <div id="album"></div>
