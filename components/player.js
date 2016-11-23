@@ -86,7 +86,11 @@ function PlayNext(){
         }
       }
     }
-  }, {duration: true});
+  }, function(err){
+    console.log('Meta Data Error');
+    console.log(err);
+    PlayNext();
+  });
 }
 
 

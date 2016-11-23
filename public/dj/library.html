@@ -2,6 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dj Library</title>
     <style>
       body{
@@ -49,6 +50,7 @@
 
       td, th{
         border: 1px solid #dddddd;
+        border-right: 1px solid #b5b5b5;
         font-weight: normal;
         text-align: left;
         padding: 1px;
@@ -64,11 +66,12 @@
 
       #menu{
         background-color: white;
-        height: 30px;
+        height: 34px;
         position: fixed;
         top: 0px;
         right: 0px;
         left: 0px;
+        box-shadow: -4px 0px 40px black;
       }
       #menu .button{
         display: inline-block;
@@ -86,26 +89,24 @@
 
       #container{
         display: block;
-        margin-top: 40px;
+        margin-top: 60px;
       }
 
-      #popup-zone{
-        z-index: 100;
-        position: absolute;
-        right: 0px;
-        bottom: 0px;
-        pointer-events: none;
-        height: 100vh;
+      #search{
+        height: 20px;
         width: 200px;
-        vertical-align: bottom;
-      }
-      .popup{
-        height: 0px;
-        overflow-y: hidden;
+        margin-bottom: 15px;
+        box-sizing: border-box;
+        border: 2px solid #ccc;
+        border-radius: 4px;
+        font-size: 16px;
+        background-color: white;
+        padding: 12px 20px 12px 10px;
         border-radius: 5px;
-        color: rgb(200, 200, 200);
-        background-color: rgba(0, 0, 0, 0.5);
-        transition: height 1s;
+        transition: width 1s;
+      }
+      #search:focus{
+        width: calc(100% - 15px);
       }
 
       .list-section{
@@ -274,13 +275,12 @@
 
           document.getElementById('songs').innerHTML = '<h1 style="margin-left: 15px;">'+title+'</h1>';
 
+          document.getElementById('songs').innerHTML += '<div id="songInfo"></div>';
+
           var searchBox = document.createElement('DIV');
           searchBox.style['padding-left'] = '15px';
-          searchBox.innerHTML = 'Search: ';
-          searchBox.innerHTML += `<input id="search" oninput="SearchType(this)" onchange="DrawSongs(cache.songSetData, '${title}', {type: 'search', key: this.value, update: true})"></input>`;
+          searchBox.innerHTML += `<input id="search" oninput="SearchType(this)" placeholder="Search.." onchange="DrawSongs(cache.songSetData, '${title}', {type: 'search', key: this.value, update: true})"></input>`;
           document.getElementById('songs').appendChild(searchBox);
-
-          document.getElementById('songs').innerHTML += '<div id="songInfo"></div>';
 
           document.getElementById('album').style.display = 'none';
           document.getElementById('artist').style.display = 'none';
@@ -801,7 +801,7 @@
 
         searchType = setTimeout(function () {
           DrawSongs(cache.songSetData, cache.list.title, {type: 'search', key: element.value, update: true});
-        }, 1000);
+        }, 800);
       }
 
       function SearchSet(set, key){
@@ -867,7 +867,7 @@
       <div class="button" onclick="Show('playlist')" style="float:right">Playlist</div>
       <div class="button" onclick="location.pathname = '/'" style="float:right">Player</div>
 
-      <div style="height: 1px; width: 100%; background-color: gray; margin-top: -2px;"></div>
+      <!-- <div style="height: 1px; width: 100%; background-color: gray; margin-top: -2px;"></div> -->
     </div>
     <div id="container">
       <div id="album"></div>

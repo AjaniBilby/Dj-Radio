@@ -104,9 +104,9 @@
 
       #prev-played{
         padding: 15px;
-        margin-top: calc(50vh + 100px);
+        margin-top: 50vh;
         width: 90vw;
-        height: 500px;
+        height: calc(100vh - 200px);
         text-align: left;
         padding-left: 15px;
         display: inline-block;
@@ -125,9 +125,10 @@
       }
 
       #currently-playing{
+        display: none;
         overflow-y: hidden;
         position: relative;
-        margin-top: calc(50vh - 100px);
+        margin-top: calc(50vh - 75px);
         width: 80vw;
         height: 100px;
         align-content: center;
@@ -195,9 +196,21 @@
         font-size: 12pt;
       }
 
+      #footer{
+        width: calc(100% - 10px);
+        padding-left: 5px;
+        padding-right: 5px;
+        margin-top: 5px;
+        margin-bottom: 5px;
+      }
+      #footer a{
+        color: gray;
+        font-family: arial;
+        font-style: bold;
+      }
+
       @media only screen and (max-width: 480px){
         #currently-playing{
-          height: calc(100px + 80vw);
           width: calc(100vw - 20px);
         }
 
@@ -212,14 +225,17 @@
           margin: 0px;
         }
 
+        #content{
+          padding-left: 10px;
+        }
+
         #timeline{
           width: calc(100% - 18px);
         }
 
         #prev-played{
           padding-left: 10px;
-          padding-right: 10px;
-          width: 100vw;
+          width: calc(100vw - 42px);
         }
       }
     </style>
@@ -271,6 +287,8 @@
         }
       }
 
+
+
       var img;
       var colors = [
         {r: 42, g: 201, b: 135},
@@ -278,23 +296,61 @@
         {r:255, g:184, b:0},
         {r:0, g:200, b:213},
         {r:255, g:0, b:145},
+        {r:0, g:100, b:255},
+        {r:226, g:20, b:0},
+        {r:247, g:139, b:0},
+        {r:88, g:221, b:0},
+        {r:74, g:232, b:196},
+        {r:59, g:136, b:235},
+        {r:56, g:36, b:170},
       ];
+      //Colors
+      //rgb(42, 201, 135) Bud Green
+      //rgb(190, 0, 207) Radient Purple
+      //rgb(255, 184, 0) Golden Yellow
+      //rgb(0, 200, 213) Vibrant Cyan
+      //rgb(255, 0, 145) Hot Pink
+      //rgb(0, 100, 255) Soft Blue
+      //rgb(226, 20, 0) Radient Red
+      //rgb(247, 139, 0) Dull Orange / Brown
+      //rgb(88, 221, 0) Vibrant Green
+      //rgb(74, 232, 196) Cyan
+      //rgb(59, 136, 235) Aqua
+      //rgb(56, 36, 170) Deep Purple
+
       function SetColor(input){
+
         var color;
         if (typeof(input) == 'object' && typeof(input.r) == 'number' && typeof(input.g) == 'number' && typeof(input.b) == 'number'){
-          input.r = Math.round(input.r);
-          input.g = Math.round(input.g);
-          input.b = Math.round(input.b);
-          color = input;
+          var options = null;
+
+          for (let index in colors){
+            var dist = {
+              r: (colors[index].r+input.r)/2,
+              g: (colors[index].g+input.g)/2,
+              b: (colors[index].b+input.b)/2
+            }
+
+            let irrelevance = Math.sqrt(dist.r*dist.r + dist.b*dist.b + dist.g*dist.g);
+
+            if (options == null){
+              options = {index: index, irrelevance: irrelevance};
+            }else if (irrelevance < options.irrelevance){
+              //If current item is close to the color then make this the main option
+              options = {index: index, irrelevance: irrelevance};
+            }
+          }
+
+          color = colors[options.index];
         }else if (typeof(input) == 'number'){
           color = colors[input];
         }else{
           color = colors[randInt(0, colors.length-1)];
         }
 
+
         document.getElementById("progessBar").style["background-color"] = "rgb("+color.r+", "+color.g+", "+color.b+")";
         document.getElementById("album").style["color"] = "rgb("+(color.r-20)+", "+(color.g-20)+", "+(color.b-20)+")";
-        document.body.style["background-color"] = "rgba("+(color.r)+", "+(color.g)+", "+(color.b)+", 0.1)";
       }
       function NewSong(songData){
         document.getElementById("content").style.height = "0px";
@@ -314,7 +370,7 @@
         img.onerror = function(){
           SetColor();
         };
-        img.onload = function(){
+        img.onload = function(evt){
           context.clearRect(0,0,100,100);
           context.drawImage(img, 0, 0, img.width, img.height, 0, 0, 100, 100);
 
@@ -362,7 +418,12 @@
 
           document.getElementById("content").style.height = "100px";
 
-          SetColor(average);
+          //If black / null then pick completely random
+          if (average.r == 0 && average.g == 0 && average.b == 0){
+            SetColor();
+          }else{
+            SetColor(average);
+          }
 
           RequestData(window.location.origin+'/stream/get/prevSongs', function(data){
             DrawPrevPlay(data);
@@ -511,7 +572,12 @@
       <div id="upArrow" style="display:none;"></div>
     </div>
 
-    <div style="width 100%; margin: 5px;"><a style="color:gray; font-family: arial;" href="/dj/library">Dj Pannel</a></div>
+    <div id="footer">
+      <a href="/info">Info</a>
+      <a style="float: right;" href="/custom-stream">Streaming</a>
+      <a style="float: left;" href="/dj/library">Dj Pannel</a>
+    </div>
+
     <script id="streams">
       var canvas = document.getElementById('canvas');
       var context = canvas.getContext('2d');

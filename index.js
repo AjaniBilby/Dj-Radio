@@ -250,7 +250,7 @@ app.get('/dj/playlist', function(req, res){
     'Content-Type': 'application/json'
   });
 
-  var data = [];
+  var data = [metaStream.prevChunk];
   for (let file of liveStream.player.playlist){
     var id = liveStream.player.library.index.library.files.indexOf(file);
     var song = liveStream.player.library.getSongInfo(id);
