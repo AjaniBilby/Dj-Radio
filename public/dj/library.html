@@ -181,6 +181,22 @@
         background-color: rgba(255, 207, 0, 0.6);
       }
 
+      .remover{
+        cursor: pointer;
+        display: inline-block;
+        font-family: arial, sans-serif;
+        background-color: rgba(0, 0, 0, 0.2);
+        padding: 5px;
+        border-radius: 2px;
+        transition: background-color 0.5s;
+      }
+      .remover:hover{
+        background-color: rgba(205, 0, 50, 0.60);
+      }
+      .remover:active{
+        background-color: rgba(255, 207, 0, 0.6);
+      }
+
       .link{
         cursor: pointer;
       }
@@ -624,6 +640,8 @@
             var order = 0;
             for (let index in data){
 
+              data[index].order = order;
+
               var row = document.createElement('tr');
               row.className = "song-row";
               row.innerHTML += '<th>'+order+'</th>';
@@ -687,6 +705,33 @@
                   element.appendChild(stats);
                   element.innerHTML += '</br>';
                   element.innerHTML += '<br>';
+
+                  var remove = document.createElement('div');
+                  remove.innerHTML = 'Remove';
+                  remove.className = 'remover';
+                  remove.onclick = function(evt){
+                    element.style.cursor = 'progress';
+                    remove.style['background-color'] = "rgb(225, 237, 0)";
+
+                    var id = data[index].order - 1;
+                    if (id < 0){
+
+                    }else{
+                      RequestData(location.origin+'/dj/playlist/remove/'+id+'/'+encodeURIComponent(data[index].file), function(data){
+                        element.style.cursor = 'default';
+
+                        if (data == true){
+                          remove.style['background-color'] = "rgb(0, 205, 70)";
+
+                          remove.innerHTML = 'Removed';
+                          remove.onclick = function(evt){};
+                        }else{
+                          remove.style['background-color'] = "rgb(205, 100, 0)";
+                        }
+                      });
+                    };
+                    }
+                  element.appendChild(remove);
 
                   songInfo.innerHTML = '';
                   songInfo.appendChild(element);

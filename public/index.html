@@ -105,6 +105,7 @@
       #prev-played{
         padding: 15px;
         margin-top: 50vh;
+        margin-left: 2vw;
         width: 90vw;
         height: calc(100vh - 200px);
         text-align: left;
@@ -129,6 +130,7 @@
         overflow-y: hidden;
         position: relative;
         margin-top: calc(50vh - 75px);
+        margin-left: 10vw;
         width: 80vw;
         height: 100px;
         align-content: center;
@@ -176,11 +178,9 @@
         font-size: 24pt;
         font-weight: 200;
       }
-
       .input{
         font-weight: normal;
       }
-
       .album{
         display: inline-block;
         padding-top: 5px;
@@ -188,7 +188,6 @@
         font-weight: 700;
         font-size: 12pt;
       }
-
       .artist{
         display: inline-block;
         color: rgb(110, 110, 110);
@@ -196,12 +195,27 @@
         font-size: 12pt;
       }
 
-      #footer{
-        width: calc(100% - 10px);
+      .userInput{
+        display: inline-block;
+        padding-left: 10px;
+      }
+      .userInput .like{
         padding-left: 5px;
         padding-right: 5px;
+        height: 15px;
+        display: inline-block;
+      }
+      .userInput .dislike{
+        height: 20px;
+        display: inline-block;
+      }
+
+      #footer{
+        width: calc(100% - 40px);
+        height: 25px;
+        padding-left: 15px;
+        padding-right: 15px;
         margin-top: 5px;
-        margin-bottom: 5px;
       }
       #footer a{
         color: gray;
@@ -212,6 +226,7 @@
       @media only screen and (max-width: 480px){
         #currently-playing{
           width: calc(100vw - 20px);
+          margin-right: 10px;
         }
 
         #text{
@@ -236,10 +251,19 @@
         #prev-played{
           padding-left: 10px;
           width: calc(100vw - 42px);
+          margin-left: 21px;
         }
       }
     </style>
     <script>
+      var templateSong = {
+        title: "Title",
+        artist: ["Artist"],
+        album: "Album",
+        duration: 120,
+        startTime: Date.now()
+      }
+
       var song = {
         title: "Title",
         artist: ["Artist"],
@@ -252,21 +276,72 @@
       function randInt(min, max){
         return Math.round(Math.random()*(max-min)+min);
       }
+
+      function setCookie(cname, cvalue) {
+          document.cookie = cname + "=" + cvalue + ";path=/";
+      }
+      function getCookie(cname){
+        var name = cname + "=";
+        var ca = document.cookie.split(';');
+        for(var i = 0; i <ca.length; i++) {
+          var c = ca[i];
+          while (c.charAt(0)==' ') {
+            c = c.substring(1);
+          }
+          if (c.indexOf(name) == 0) {
+            return c.substring(name.length,c.length);
+          }
+        }
+        return "";
+      }
     </script>
     <script>
       function Like(id){
+        if (id === undefined){
+          id = song.id;
+        }
+
+        var save = getCookie('song-'+id);
+        if (save == 'like'){
+          //Already liked
+          return;
+        }
+
         if (id){
           RequestData(window.location.origin+'/like/'+id);
+          setCookie('song-'+id, 'like');
         }else{
           RequestData(window.location.origin+'/like');
         }
       }
 
       function Dislike(id){
+        if (id === undefined){
+          id = song.id;
+        }
+
+        var save = getCookie('song-'+id);
+        if (save == 'dislike'){
+          //Already disliked
+          return;
+        }
+
         if (id){
           RequestData(window.location.origin+'/dislike/'+id);
+          setCookie('song-'+id, 'dislike');
         }else{
           RequestData(window.location.origin+'/dislike');
+        }
+      }
+
+      function UserSongStat(id){
+        switch (getCookie('song-'+id)) {
+          case "like":
+            return true;
+          case "false":
+            return false;
+          default:
+            return null;
         }
       }
     </script>
@@ -443,7 +518,48 @@
         }else{
           current.innerHTML = '<span id="song-'+song.id+'" style="">'+song.title+'</span>'+' - <span style="color:#656565">'+song.artist.join(', ').replace(';', ',')+'</span>'
         }
-        current.innerHTML += '  <span class="input" style="display:inline-block" id="'+current.id+'-input"'+'><span onclick="Like('+song.id+')">Like</span> <span>Dislike</span onclick="Dislike('+song.id+')"></span>';
+
+        var input = document.createElement("div");
+        input.className = "userInput";
+        var like = document.createElement("div");
+        like.className = "like";
+        like.onclick = function(){
+          PrevSongClick(song.id, true);
+        }
+        var fill = 'transparent';
+        if (UserSongStat(song.id) === true){
+          fill = '#ED1A64';
+        }
+        like.innerHTML = `<svg version="1.1" id="Layer_2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+        	 width="19.5px" height="15px" viewBox="0 0 369.569 281.012" enable-background="new 0 0 369.569 281.012"
+        	 xml:space="preserve">
+        <path id="song-svg-like-${song.id}" fill="${fill}" stroke="#ED1A64" stroke-width="20" stroke-miterlimit="10" d="M185.026,274.217
+        	c0,0-138.525-57.216-171.977-134.786C-25.841,49.253,105.214-51.847,185.026,48.7c79.813-101.813,211.956,0.548,171.429,92.184
+        	C323.568,215.241,203.447,266.104,185.026,274.217z"/>
+        </svg>`;
+        input.appendChild(like);
+
+        var dislike = document.createElement("div");
+        dislike.className = "dislike";
+        dislike.onclick = function(){
+          PrevSongClick(song.id, false);
+        }
+        var fill = 'transparent';
+        if (UserSongStat(song.id) === false){
+          fill = '#EF4223';
+        }
+        dislike.innerHTML = `<svg version="1.1" id="Layer_2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+        	 width="20px" height="20px" viewBox="0 0 350 350" enable-background="new 0 0 350 350" xml:space="preserve">
+        <path id="song-svg-dislike-${song.id}" fill="${fill}" stroke="#EF4223" stroke-width="20" stroke-miterlimit="10" d="M127.206,336.166c0,0-62.963-24.556-63.593-77.445
+        	s50.371-100.741,27.704-142.297c0,0,42.815,13.222,32.111,86.26c0,0,22.667-16.371,3.778-93.815
+        	c-11.963-44.703,52.259-95.703,52.259-95.703s-16.371,62.334-4.408,91.297c11.963,28.963,44.075,52.259,44.075,52.259
+        	s-5.667-46.592,41.556-72.408c0,0-18.889,51,15.111,109.556c34,58.555-6.926,125.294-45.963,137.887c0,0,36.519-29.592,1.26-79.963
+        	c0,0-18.26,41.555-37.148,38.407c-18.889-3.148,34.63-62.333,2.519-100.111c0,0-6.297,33.371-42.186,47.852
+        	C118.391,252.424,83.762,275.723,127.206,336.166z"/>
+        </svg>`;
+        input.appendChild(dislike);
+
+        current.appendChild(input);
 
         list.appendChild(current);
 
@@ -459,10 +575,65 @@
             html += ' ('+item.album+')';
           }
 
-          html += '  <span class="input" id="'+element.id+'-input"'+'><span onclick="Like('+element.id+')">Like</span> <span>Dislike</span onclick="Dislike('+element.id+')"></span>';
-
           element.innerHTML = html;
+
+          var input = document.createElement("div");
+          input.className = "userInput";
+          var like = document.createElement("div");
+          like.className = "like";
+          like.onclick = function(){
+            PrevSongClick(item.id, true);
+          }
+          var fill = 'transparent';
+          if (UserSongStat(song.id) === true){
+            fill = '#ED1A64';
+          }
+          like.innerHTML = `<svg version="1.1" id="Layer_2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+          	 width="19.5px" height="15px" viewBox="0 0 369.569 281.012" enable-background="new 0 0 369.569 281.012"
+          	 xml:space="preserve">
+          <path id="song-svg-like-${item.id}" fill="${fill}" stroke="#ED1A64" stroke-width="20" stroke-miterlimit="10" d="M185.026,274.217
+          	c0,0-138.525-57.216-171.977-134.786C-25.841,49.253,105.214-51.847,185.026,48.7c79.813-101.813,211.956,0.548,171.429,92.184
+          	C323.568,215.241,203.447,266.104,185.026,274.217z"/>
+          </svg>`;
+          input.appendChild(like);
+
+          var dislike = document.createElement("div");
+          dislike.className = "dislike";
+          dislike.onclick = function(){
+            PrevSongClick(item.id, false);
+          }
+          var fill = 'transparent';
+          if (UserSongStat(item.id) === false){
+            fill = '#EF4223';
+          }
+          dislike.innerHTML = `<svg version="1.1" id="Layer_2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+          	 width="20px" height="20px" viewBox="0 0 350 350" enable-background="new 0 0 350 350" xml:space="preserve">
+          <path id="song-svg-dislike-${item.id}" fill="${fill}" stroke="#EF4223" stroke-width="20" stroke-miterlimit="10" d="M127.206,336.166c0,0-62.963-24.556-63.593-77.445
+          	s50.371-100.741,27.704-142.297c0,0,42.815,13.222,32.111,86.26c0,0,22.667-16.371,3.778-93.815
+          	c-11.963-44.703,52.259-95.703,52.259-95.703s-16.371,62.334-4.408,91.297c11.963,28.963,44.075,52.259,44.075,52.259
+          	s-5.667-46.592,41.556-72.408c0,0-18.889,51,15.111,109.556c34,58.555-6.926,125.294-45.963,137.887c0,0,36.519-29.592,1.26-79.963
+          	c0,0-18.26,41.555-37.148,38.407c-18.889-3.148,34.63-62.333,2.519-100.111c0,0-6.297,33.371-42.186,47.852
+          	C118.391,252.424,83.762,275.723,127.206,336.166z"/>
+          </svg>`;
+          input.appendChild(dislike);
+
+          element.appendChild(input);
+
           list.appendChild(element);
+        }
+      }
+      function PrevSongClick(id, type){
+        var like = document.getElementById('song-svg-like-'+id);
+        var dislike = document.getElementById('song-svg-dislike-'+id);
+
+        if (type === true){ //like
+          like.setAttribute("fill", "#ED1A64");
+          dislike.setAttribute("fill", "transparent");
+          Like(id);
+        }else if (type === false){ //dislike
+          like.setAttribute("fill", "transparent");
+          dislike.setAttribute("fill", "#EF4223");
+          Dislike(id);
         }
       }
 
@@ -543,7 +714,7 @@
       }
     </script>
   </head>
-  <body style="padding: 0px; margin: 0px;" align="center">
+  <body style="padding: 0px; margin: 0px;">
     <audio id="player" preload="none">
       <source src="stream.mp3" type="audio/mpeg">
     </audio>
@@ -573,9 +744,8 @@
     </div>
 
     <div id="footer">
-      <a href="/info">Info</a>
-      <a style="float: right;" href="/custom-stream">Streaming</a>
-      <a style="float: left;" href="/dj/library">Dj Pannel</a>
+      <a style="float: left;" href="/dj/library">Dj Panel</a>
+      <a style="float: right;" href="/info">Info</a>
     </div>
 
     <script id="streams">

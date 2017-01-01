@@ -35,14 +35,16 @@ module.exports = {
   like: function(songId){
     var time = indexer.time(); //Current Hour
 
-    if (typeof(indexer.library.stats.list[songId][time]) == "object"){
+    if (typeof(indexer.library.stats.list[songId]) == "object" && typeof(indexer.library.stats.list[songId][time]) == "object"){
       indexer.library.stats.list[songId][time].likes += 1;
       return indexer.library.stats.list[songId][time];
     }
     return null;
   },
   dislike: function(songId){
-    if (typeof(indexer.library.stats.list[songId][time]) == "object"){
+    var time = indexer.time(); //Current Hour
+
+    if (typeof(indexer.library.stats.list[songId]) == "object" && typeof(indexer.library.stats.list[songId][time]) == "object"){
       indexer.library.stats.list[songId][time].dislikes += 1;
       return indexer.library.stats.list[songId][time];
     }

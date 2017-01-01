@@ -3,6 +3,10 @@ var app = new passer.app();
 var liveStream = require('./components/live-stream.js');
 var Stream = require('./components/stream.js');
 
+var logins = {
+  admin: "admin"
+};
+
 
 
 
@@ -13,6 +17,22 @@ var Stream = require('./components/stream.js');
 
 app.publicFolder = "public";
 app.listen(8080);
+
+app.addAuth(
+  ["/dj/*"],
+  function(req, res){
+    return req.session.loggedIn;
+  },
+  function(req, res){
+    res.writeHead(302, {
+      'Location': 'http://'+req.headers.host+'/dj/login'
+    });
+    res.end("redirecting");
+
+    return;
+  },
+  ["/dj/login*"]
+);
 
 
 
@@ -143,6 +163,11 @@ app.get('/like*', function(req, res){
     id = parseInt(req.url.substr(6, req.url.length-1));
   }
 
+  if (isNaN(id)){
+    res.end('false');
+    return;
+  }
+
   if (req.session.data.likes[id] != 1){
     liveStream.player.library.like(id);
 
@@ -152,7 +177,7 @@ app.get('/like*', function(req, res){
   res.end("true");
   return;
 });
-app.get('/dislike', function(req, res){
+app.get('/dislike/*', function(req, res){
   if (typeof(req.session.data.dislikes) != "object"){
     req.session.data.dislikes = {};
   }
@@ -162,16 +187,38 @@ app.get('/dislike', function(req, res){
     id = parseInt(req.url.substr(6, req.url.length-1));
   }
 
-  if (req.session.data.dislikes[id] != 1){
-    liveStream.player.library.dislikes(id);
+  if (isNaN(id)){
+    res.end('false');
+    return;
+  }
 
-    req.session.data.dislikes[id] = 1;
+  if (req.session.data.dislikes[id] != 1){
+    liveStream.player.library.dislike(id);
+
+    req.session.data.dislike[id] = 1;
   }
 
   res.end("true");
   return;
 });
 
+app.get('/dj/login/*', function(req, res){
+  var input = req.url.slice(10);
+  input = input.split('/');
+  var username = decodeURIComponent(input[0]);
+  var password = decodeURIComponent(input[1]);
+
+  if (typeof(logins[username]) == "string"){
+    if (logins[username] == password){
+      req.session.loggedIn = true;
+      res.end('true');
+      return;
+    }
+  }
+
+  res.end('false');
+  return;
+});
 app.get('/dj/request/*', function(req, res){
   var songId = req.url.substr(12);
 
@@ -262,6 +309,21 @@ app.get('/dj/playlist', function(req, res){
 
   res.end(JSON.stringify(data));
   return;
+});
+app.get('/dj/playlist/remove/*', function(req, res){
+  var input = req.url;
+  input = input.slice(20).split('/');
+  var id = input[0];
+  input = decodeURIComponent(input.splice(1).join('/'));
+
+  if (liveStream.player.playlist[id] == input){
+    liveStream.player.playlist.splice(id, 1);
+    res.end('true');
+    return;
+  }else{
+    res.end('false');
+    return;
+  }
 });
 app.get('/dj/all/song/meta', function(req, res){
   res.end(JSON.stringify(liveStream.player.library.index.library.info));

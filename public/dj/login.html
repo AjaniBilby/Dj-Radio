@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Login - Dj Radio</title>
+    <script>
+      function RequestData(file, callback, objectify = true){
+        var data = "";
+        var xmlhttp = new XMLHttpRequest();
+        xmlhttp.onreadystatechange = function() {
+          if (xmlhttp.readyState == 4 && xmlhttp.status == 200){
+            var resData = xmlhttp.responseText;
+            if (objectify === true){
+              resData = JSON.parse(resData);
+            }
+            if (typeof(callback) == "function"){
+              callback(resData);
+            }
+            return resData;
+          }
+        };
+        xmlhttp.open("GET", location.origin+file, true);
+        xmlhttp.send();
+
+        return xmlhttp;
+      }
+    </script>
+    <script>
+      var username = prompt("Please enter username", "");
+      var password = prompt("Please enter password", "");
+      RequestData('/dj/login/'+encodeURIComponent(username)+'/'+encodeURIComponent(password), function(data){
+        if (data == 'true'){
+          location.pathname = '/dj/library';
+        }else{
+          alert("Failed");
+          location.reload()
+        }
+      }, false);
+    </script>
+  </head>
+  <body>
+  </body>
+</html>
