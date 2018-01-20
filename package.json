@@ -9,6 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "cosf": "^1.0.6",
+    "custom-radix": "^1.0.4",
     "lame": "^1.2.4",
     "mass-random": "^1.0.3",
     "musicmetadata": "^2.0.4",

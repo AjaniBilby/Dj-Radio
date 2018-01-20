@@ -1,2 +1,4 @@
 node_modules/*
 library/data.json
+_old/*
+data/*
