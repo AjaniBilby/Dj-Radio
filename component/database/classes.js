@@ -7,17 +7,6 @@ var fs = require('fs');
 
 
 
-//Check that the database cache exists
-//   (Used for storing which table elements are blank)
-if (!fs.existsSync('./data')){
-  fs.mkdir('./data');
-}
-if (!fs.existsSync('./data/meta.dat')){
-  fs.writeFileSync('./data/meta.dat', '{}');
-}
-
-
-
 
 
 //Setup fixed radix sizes
@@ -307,6 +296,7 @@ Table.prototype.scan = function(){
     }, function(lastIndex){
       db.rows = lastIndex;
       resolve();
+      return;
     });
   })
 }
@@ -332,10 +322,11 @@ Table.prototype.forEach = function(loop, finish){
     buffer += chunk.toString();
 
     while (buffer.length >= db.rowLength){
-      let row = buffer.slice(0, db.rowLength);
-
       if (db.empty.indexOf(i) == -1){
-        let t = new Tuple(db, row);
+        let t = new Tuple(
+          db,
+          buffer.slice(0, db.rowLength)
+        );
         t.index = i;
         loop(i, t);
       }
@@ -351,9 +342,7 @@ Table.prototype.forEach = function(loop, finish){
       finish(i);
     }
 
-    stream.close();
-    delete buffer;
-    delete i;
+    return;
   });
 }
 
@@ -382,8 +371,10 @@ Table.prototype.append = function(tuple){
     fs.appendFile(this.path, chunk, function(err){
       if (err){
         reject(err);
+        return;
       }else{
         resolve(index);
+        return;
       }
     });
   })
@@ -394,6 +385,7 @@ Table.prototype.append = function(tuple){
  * @param {number} index
  */
 Table.prototype.get = function(index){
+
   let db = this;
 
   //This function cannot be async because other wise the return is in the wrong scope
@@ -403,22 +395,15 @@ Table.prototype.get = function(index){
       return;
     }
 
-    let sp = index * this.rowLength-1; //The start point of the row
+    let sp = index * this.rowLength; //The start point of the row
     let buffer = '';
-    let pointer = 0;
 
-    let stream = fs.createReadStream(this.path);
+    let stream = fs.createReadStream(this.path, {
+      start: sp,
+      end: sp+db.rowLength
+    });
     stream.on('data', function(chunk){
-      chunk = chunk.toString();
-
-      let wp = pointer+chunk.length; //working pointer (end of the current chunk)
-      if (wp > sp){
-        if (pointer > sp){
-          buffer += chunk;
-        }else{
-          buffer += chunk.slice((sp - pointer));
-        }
-      }
+      buffer += chunk.toString();
   
       if (buffer.length >= db.rowLength){
         t = new Tuple(db, buffer.slice(0, db.rowLength))
@@ -427,8 +412,6 @@ Table.prototype.get = function(index){
         resolve(t);
         return;
       }
-
-      pointer += chunk.length;
     })
 
     stream.on('finish', function(){

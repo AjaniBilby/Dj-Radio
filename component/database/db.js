@@ -20,11 +20,15 @@ tables.song.addField('genre4', 'int', 2);
 tables.song.addField('genre5', 'int', 2);
 
 
-tables.song.scan().then(async () => {
-  console.log('rows', tables.song.rows);
+tables.song.scan()
+  .then(async () => {
+    console.log('rows', tables.song.rows);
 
-  for (let i=0; i<=tables.song.rows; i++){
-    row = await tables.song.get(i);
-    console.log(row.data);
-  }
-});
+    for (let i=0; i<=tables.song.rows; i++){
+      row = await tables.song.get(i);
+      console.log(row.data);
+    }
+  })
+  .catch((err) => {
+    console.error(err);
+  })
