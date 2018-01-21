@@ -225,6 +225,7 @@ class Table{
  * @param {string} name 
  * @param {string} type 
  * @param {int} size (has generated default values)
+ * @returns {void}
  */
 Table.prototype.addField = function(name, type, size){
   if (typeof name != 'string' || name.length == 0){
@@ -261,8 +262,9 @@ Table.prototype.addField = function(name, type, size){
 
 /**
  * Returns a blank tuple to be used for setting later
+ * @returns {Tuple}
  */
-Table.prototype.create = function(){
+Table.prototype.tuple = function(){
   //Create blank data for the tuple to use
   data = '';
   for (let field of this.fields){
@@ -282,6 +284,7 @@ Table.prototype.create = function(){
 
 /**
  * Find empty rows
+ * @returns {void}
  */
 Table.prototype.scan = function(){
   this.empty = [];
@@ -306,7 +309,8 @@ Table.prototype.scan = function(){
 /**
  * Loop though all database rows running a callback for each
  * @param {function} loop(index, tuple) 
- * @param {function} finish(lastIndex) 
+ * @param {function} finish(lastIndex, broken) 
+ * @returns {void}
  */
 Table.prototype.forEach = function(loop, finish){
   if (typeof loop != 'function'){
@@ -315,6 +319,7 @@ Table.prototype.forEach = function(loop, finish){
 
   let stream = fs.createReadStream(this.path);
   let i = 0;
+  let broken = false;
   let buffer = '';
   let db = this;
 
@@ -328,7 +333,19 @@ Table.prototype.forEach = function(loop, finish){
           buffer.slice(0, db.rowLength)
         );
         t.index = i;
-        loop(i, t);
+        let res = loop(i, t);
+
+        //If the callback returns false, safely end the loop
+        if (res === false){
+          broken = true;
+          stream.close();
+
+          //Since if does not reach the end, we need to trigger the finish here as well
+          if (typeof finish == "function"){
+            finish(i);
+          }
+          return;
+        }
       }
 
 
@@ -352,6 +369,7 @@ Table.prototype.forEach = function(loop, finish){
  * Add a new row to the end of the table (saves processing, but will leave blank rows blank)
  * @param {Tuple} tuple 
  * @param {function} callback 
+ * @returns {number} index
  */
 Table.prototype.append = function(tuple){
   if (!(tuple instanceof Tuple) || tuple.parent != this){
@@ -383,6 +401,7 @@ Table.prototype.append = function(tuple){
 /**
  * Get a specific row by index
  * @param {number} index
+ * @returns {tuple}
  */
 Table.prototype.get = function(index){
 
@@ -400,11 +419,11 @@ Table.prototype.get = function(index){
 
     let stream = fs.createReadStream(this.path, {
       start: sp,
-      end: sp+db.rowLength
+      end: (sp+db.rowLength)+1
     });
     stream.on('data', function(chunk){
       buffer += chunk.toString();
-  
+
       if (buffer.length >= db.rowLength){
         t = new Tuple(db, buffer.slice(0, db.rowLength))
         t.index = index;
@@ -414,8 +433,8 @@ Table.prototype.get = function(index){
       }
     })
 
-    stream.on('finish', function(){
-      reject('Index out of range (ran out of file)');
+    stream.on('end', function(){
+      reject(`Index out of range (ran out of file) [${db.name}][${index}]`);
     })
   })
 }
@@ -424,6 +443,7 @@ Table.prototype.get = function(index){
  * Overwrite a specific rows data
  * @param {number} index 
  * @param {Tuple} tuple 
+ * @returns {number} index
  */
 Table.prototype.overwrite = function(index, tuple){
   if (!(tuple instanceof Tuple) || tuple.parent != this){
@@ -453,6 +473,7 @@ Table.prototype.overwrite = function(index, tuple){
 /**
  * Empty a specific row to be overwritten later
  * @param {number} index 
+ * @returns {number} index
  */
 Table.prototype.delete = async function(index){
   //Create a blank row
@@ -464,6 +485,7 @@ Table.prototype.delete = async function(index){
 /**
  * Add the new tuple in an existing free space (i.e at the end of the table, or a blank row)
  * @param {Tuple} tuple 
+ * @returns {number} index
  */
 Table.prototype.insert = async function(tuple){
   let db = this;
