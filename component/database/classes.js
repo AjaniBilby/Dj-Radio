@@ -11,8 +11,8 @@ var fs = require('fs');
 
 //Setup fixed radix sizes
 str = '';
-for (let i=0; i<255; i++){
-  str += String.fromCharCode(i)
+for (let i=0; i<=255; i++){
+  str += String.fromCharCode(i);
 }
 byteRadix = new Radix(str);
 
@@ -43,16 +43,21 @@ Attribute.prototype.encode = function(value){
   switch (this.type){
     case this.types.int:
       if (Number.isInteger(value)){
+        let int = value;
         value = byteRadix.numberToEncoding(value);
 
         if (value.length > this.size){
-          console.warn(`Attribute ${this.parent.name}/${this.name} has been given too big an int while will overflow`);
+          console.warn(`Attribute ${this.parent.name}/${this.name} has been given too big an int while will overflow. "${int}"`);
           value = value.slice(value.length-this.size, value.length); //Select from the ending characters
         }
 
         //Add leading zeros to make the number the right size
         while (value.length < this.size){
           value = String.fromCharCode(0) + value;
+        }
+
+        if (value.length > this.size){
+          throw `Unexpected attribute encoding error. ${value.length}>${this.size}`;
         }
 
         return value;
@@ -64,13 +69,17 @@ Attribute.prototype.encode = function(value){
       if (typeof value == 'string'){
         //Remove any extra characters in the string
         if (value.length > this.size){
-          console.warn(`Attribute ${this.parent.name}/${this.name} has been give a string that was too long.\n${value.length} > ${this.size}`);
+          console.warn(`Attribute ${this.parent.name}/${this.name} has been give a string that was too long.\n${value.length} > ${this.size}. "${value}"`);
           value = value.slice(0, this.size);
         }
 
         //Add white space if the string is too short
         while (value.length < this.size){
           value += ' ';
+        }
+
+        if (value.length > this.size){
+          throw `Unexpected attribute encoding error. ${value.length}>${this.size}`;
         }
 
         return value;
@@ -169,6 +178,10 @@ Tuple.prototype.encode = function(){
 
   for (field of this.parent.fields){
     data += field.encode(this.data[field.name]);
+  }
+
+  if (data.length != this.parent.rowLength){
+    throw `Unknown encoding error, tuple length is too long ${data.length}>${this.parent.rowLength}`;
   }
 
   return data;
@@ -408,28 +421,33 @@ Table.prototype.get = function(index){
   let db = this;
 
   //This function cannot be async because other wise the return is in the wrong scope
+  //Also this function cannot get the the tuple by direct byte picking, because of utf8 encoding meaning that some rows are actually longer that the row length
   return new Promise((resolve, reject) => {
-    if (index > this.rowLength){
+    if (index > this.rows){
       reject('Index out of range')
       return;
     }
 
-    let sp = index * this.rowLength; //The start point of the row
     let buffer = '';
+    let i = 0;
 
-    let stream = fs.createReadStream(this.path, {
-      start: sp,
-      end: (sp+db.rowLength)+1
-    });
+    let stream = fs.createReadStream(this.path);
     stream.on('data', function(chunk){
       buffer += chunk.toString();
 
-      if (buffer.length >= db.rowLength){
-        t = new Tuple(db, buffer.slice(0, db.rowLength))
-        t.index = index;
+      while (buffer.length >= db.rowLength){
+        if (i == index){
+          let chunk = buffer.slice(0, db.lenth);
+          let tuple = new Tuple(db, chunk);
+          tuple.index = index;
 
-        resolve(t);
-        return;
+          resolve(tuple);
+          stream.close();
+          return;
+        }
+
+        buffer = buffer.slice(db.rowLength);
+        i += 1;
       }
     })
 

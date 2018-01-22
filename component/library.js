@@ -61,6 +61,7 @@ function Catalog(folder){
     function loop(i){
       if (i == files.length){
         resolve();
+        return;
       }
 
       let nstatus = parseInt(i/files.length*100);
@@ -74,14 +75,21 @@ function Catalog(folder){
       mm(fs.createReadStream(file), (err, meta)=>{
         if (!err){
           var hasIcon = meta.picture[0] && meta.picture[0].data && meta.picture[0].format == 'jpg';
+          
+          meta.artist = meta.artist.concat(meta.albumartist);
+          for (let i=0; i<meta.artist.length; i++){
+            if (meta.artist[i].indexOf('/') != -1){
+              let sect = meta.artist.splice(i, 1)[0];
+              sect = sect.split('/');
+          
+              meta.artist = meta.artist.concat(sect);
+            }
+          }
 
           db.song.add({
             title:     meta.title,
-            album: {
-              name:    meta.album,
-              icon:    ''
-            },
-            artist:    meta.artist.concat(meta.albumartist),
+            album:     meta.album,
+            artist:    meta.artist,
             year:      meta.year,
             track:     meta.track.no,
             genre:     meta.genre,
@@ -95,24 +103,22 @@ function Catalog(folder){
                     return;
                   }
 
-                  var path = `./data/icons/${id}.jpg`;
+                  var path = './data/icons/'+id+'.jpg';
                   fs.writeFile(path, meta.picture[0].data ,()=>{});
-    
-                  tuple = db.table.album.tuple();
-                  tuple.data.name = meta.album;
-                  tuple.data.icon = path;
-                  db.table.album.overwrite(id, tuple);
                 })
               }
 
+              //This is done after the song has been saved because then other songs will be able to reference it's content correctly
+              loop(i+1);
             })
             .catch((e)=>{
               console.error(`Failed to Catalog "${file}`);
               console.error('\t'+e);
+              loop(i+1);
             })
+        }else{
+          loop(i+1);
         }
-
-        loop(i+1);
       });
     }
 
@@ -124,14 +130,6 @@ function Catalog(folder){
   });
 }
 
-Catalog('e:/user/music')
-  .then(()=>{
-    console.log('complete');
-  })
-  .catch((e)=>{
-    console.error(e);
-  })
-
-// db.table.song.get(2133).then((tuple) => {
-//   console.log(tuple);
-// })
+db.initialize().then(()=>{
+  console.log('Songs', db.table.song.rows);
+});

@@ -34,7 +34,7 @@ table.song.addField('title', 'string', 80);
 table.song.addField('path', 'string', 200);
 table.song.addField('length', 'int', 4);       //Length of the song in ms
 table.song.addField('album', 'int', 4);        //Each album will have a unique ID
-table.song.addField('track', 'int', 1);
+table.song.addField('track', 'int', 2);
 table.song.addField('year', 'int', 2);
 table.song.addField('artist1', 'int', 3);      //Each artist has a unique ID, maximum five artists per song
 table.song.addField('artist2', 'int', 3);
@@ -46,34 +46,32 @@ table.song.addField('genre2', 'int', 2);    //NOTE: geners have a smaller ID num
 table.song.addField('genre3', 'int', 2);
 table.song.addField('genre4', 'int', 2);
 table.song.addField('genre5', 'int', 2);
-table.song.scan();
 
 
 /*------------------------------------------
     Setup Album Table
 ------------------------------------------*/
 table.album = new dbClass('album', './data/album.db');
-table.album.addField('name', 'string', 70);
-table.album.addField('icon', 'string', 120); //Path to icon
+table.album.addField('name', 'string', 60);
+//A path to the icon does not need to be stored since it can be assumed that it would be in the icons folder if it existed
 
 //Make sure that the first album is empty so there can be null references
 let empty = table.album.tuple();
 empty.data.name = 'Unknown';
 table.album.overwrite(0, empty);
-table.album.scan();
 
 
 /*------------------------------------------
     Setup Artist Table
 ------------------------------------------*/
 table.artist = new dbClass('Artist', './data/artist.db');
-table.artist.addField('name', 'string', 60);
+table.artist.addField('name', 'string', 50);
 
 //Make sure that the first album is empty so there can be null references
 empty = table.artist.tuple();
 empty.data.name = '__undefined__';
 table.artist.overwrite(0, empty);
-table.artist.scan();
+
 
 
 /*------------------------------------------
@@ -86,7 +84,6 @@ table.genre.addField('name', 'string', 40);
 empty = table.genre.tuple();
 empty.data.name = '__undefined__';
 table.genre.overwrite(0, empty);
-table.genre.scan();
 delete empty;
 
 
@@ -149,6 +146,7 @@ var album = {};
 album.exist = function(name){  
   return new Promise((resolve, reject) => {
     table.album.forEach((i, tuple) => {
+
       if (tuple.data.name == name){
         resolve(i);
 
@@ -165,13 +163,12 @@ album.exist = function(name){
  * @param {string} iconPath path to the album art (optional)
  * @returns {number} index
  */
-album.define = async function(name, iconPath = ""){
+album.define = async function(name){
   let index = await album.exist(name);
 
   if (index === -1){
     let tuple = table.album.tuple();
     tuple.data.name = name;
-    tuple.data.icon = typeof iconPath == "string" ? iconPath : "";
 
     index = await table.album.insert(tuple);
   }
@@ -280,7 +277,7 @@ song.add = async function(data, path){
   tuple.data.year = parseInt(data.year || 0);
   tuple.data.track = parseInt(data.track || 0);
   tuple.data.length = parseInt((data.duration || 0)*1000); //ms to seconds
-  tuple.data.album = await album.define(data.album.name, data.album.icon);  
+  tuple.data.album = await album.define(data.album);  
 
   var artists = data.artist;
   if (artists[0]){
@@ -297,6 +294,9 @@ song.add = async function(data, path){
   }
   if (artists[4]){
     tuple.data.artist5 = await artist.define(artists[4]);
+  }
+  if (artists.length > 5){
+    console.warn(`Song has too many artists (${artists.length}) "${path}"`);
   }
 
   var genres = data.genre;
@@ -315,6 +315,10 @@ song.add = async function(data, path){
   if (genres[4]){
     tuple.data.genre5 = await genre.define(genres[4]);
   }
+  if (genres.length > 5){
+    console.warn(`Song has too many genres (${genres.length}) "${path}"`);
+  }
+
 
   let index = await song.exist(tuple);
   if (index != -1){
@@ -414,14 +418,12 @@ song.get = async function(songs){
     try{
       tuple = await table.album.get(id);
       name = tuple.data.name;
-      path = tuple.data.icon;
     }catch(e){}
 
     for (let song of res){
       if (song.album == id){
         song.album = {
-          name: name,
-          icon: path
+          name: name
         };
       }
     }
@@ -469,6 +471,19 @@ song.get = async function(songs){
 
 
 
+
+async function initialize(){
+  await table.artist.scan();
+  await table.genre.scan();
+  await table.album.scan();
+  await table.song.scan();
+
+  return true;
+}
+
+
+
+
 /*------------------------------------------
     Out put api handles
 ------------------------------------------*/
@@ -477,5 +492,6 @@ module.exports = {
   artist,
   genre,
   song,
+  initialize,
   table: table
 }
