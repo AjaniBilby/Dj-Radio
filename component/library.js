@@ -3,10 +3,6 @@ var mm = require('musicmetadata');
 var fs = require('fs');
 
 
-//Setup icon info
-var base64 = new (require('custom-radix'))();
-
-
 //Get all files in a folder
 function GetFiles(folder){
   return new Promise((resolve, reject)=>{
@@ -67,7 +63,7 @@ function Catalog(folder){
       let nstatus = parseInt(i/files.length*100);
       if (nstatus != status){
         status = nstatus;
-        console.log(`Scanning ${status}%`);
+        console.log(`Scanning ${status}%\n\t"${folder}"`);
       }
 
       let file = files[i];
@@ -130,6 +126,13 @@ function Catalog(folder){
   });
 }
 
+let start = Date.now();
 db.initialize().then(()=>{
-  console.log('Songs', db.table.song.rows);
+  console.log('======================================');
+  console.log('     Initilized Database');
+  console.log('======================================');
+  console.log(' Songs   ', db.table.song.rows);
+  console.log(' Albums  ', db.table.album.rows);
+  console.log(' Artists ', db.table.artist.rows);
+  console.log(' Genres  ', db.table.genre.rows, '\n');
 });

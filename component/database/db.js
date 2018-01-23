@@ -30,28 +30,28 @@ if (!fs.existsSync('./data/icons')){
 ------------------------------------------*/
 table.song = new dbClass('song', './data/song.db');
 //Song ID is not needed since it will just be the row
-table.song.addField('title', 'string', 80);
-table.song.addField('path', 'string', 200);
-table.song.addField('length', 'int', 4);       //Length of the song in ms
-table.song.addField('album', 'int', 4);        //Each album will have a unique ID
-table.song.addField('track', 'int', 2);
-table.song.addField('year', 'int', 2);
-table.song.addField('artist1', 'int', 3);      //Each artist has a unique ID, maximum five artists per song
-table.song.addField('artist2', 'int', 3);
-table.song.addField('artist3', 'int', 3);
-table.song.addField('artist4', 'int', 3);
-table.song.addField('artist5', 'int', 3);
-table.song.addField('genre1', 'int', 2);    //Each genre has a unique ID, maximum five genres per song
-table.song.addField('genre2', 'int', 2);    //NOTE: geners have a smaller ID number because there are less of them (65536)
-table.song.addField('genre3', 'int', 2);
-table.song.addField('genre4', 'int', 2);
-table.song.addField('genre5', 'int', 2);
+table.song.addField('title',   'string', 80);
+table.song.addField('path',    'string', 200);
+table.song.addField('length',  'int',    3);     //Length of the song in ms
+table.song.addField('album',   'int',    4);     //Each album will have a unique ID
+table.song.addField('track',   'int',    2);
+table.song.addField('year',    'int',    2);
+table.song.addField('artist1', 'int',    3);     //Each artist has a unique ID, maximum five artists per song
+table.song.addField('artist2', 'int',    3);
+table.song.addField('artist3', 'int',    3);
+table.song.addField('artist4', 'int',    3);
+table.song.addField('artist5', 'int',    3);
+table.song.addField('genre1',  'int',    2);     //Each genre has a unique ID, maximum five genres per song
+table.song.addField('genre2',  'int',    2);     //NOTE: geners have a smaller ID number because there are less of them (65536)
+table.song.addField('genre3',  'int',    2);
+table.song.addField('genre4',  'int',    2);
+table.song.addField('genre5',  'int',    2);
 
 
 /*------------------------------------------
     Setup Album Table
 ------------------------------------------*/
-table.album = new dbClass('album', './data/album.db');
+table.album = new dbClass('Album', './data/album.db');
 table.album.addField('name', 'string', 60);
 //A path to the icon does not need to be stored since it can be assumed that it would be in the icons folder if it existed
 
@@ -265,10 +265,10 @@ song.exist = function(tuple){
  */
 song.add = async function(data, path){
   if (!fs.existsSync(path)){
-    throw `Invalid song file path (${path})`;
+    throw new Error(`Invalid song file path (${path})`);
   }
   if (!data.title){
-    throw `Invalid song name "${data.title}"`;
+    throw new Error(`Invalid song name "${data.title}"`);
   }
 
   let tuple = table.song.tuple();
@@ -277,7 +277,7 @@ song.add = async function(data, path){
   tuple.data.year = parseInt(data.year || 0);
   tuple.data.track = parseInt(data.track || 0);
   tuple.data.length = parseInt((data.duration || 0)*1000); //ms to seconds
-  tuple.data.album = await album.define(data.album);  
+  tuple.data.album = await album.define(data.album);
 
   var artists = data.artist;
   if (artists[0]){
@@ -319,7 +319,6 @@ song.add = async function(data, path){
     console.warn(`Song has too many genres (${genres.length}) "${path}"`);
   }
 
-
   let index = await song.exist(tuple);
   if (index != -1){
     return index;
@@ -327,9 +326,13 @@ song.add = async function(data, path){
 
   return await table.song.insert(tuple);
 }
+/**
+ * Returns songs with completed relationships
+ * @param {number[]} songs 
+ */
 song.get = async function(songs){
   if (!Array.isArray(songs)){
-    throw `Invalid song get "${songs}, should of been an array"`;
+    throw new Error(`Invalid song get "${songs}, should of been an array"`);
   }
 
   let artists = [];
@@ -413,7 +416,6 @@ song.get = async function(songs){
   //Complete album references
   for (let id of albums){
     let name = `Missing Album "${id}"`;
-    let path = "";
     
     try{
       tuple = await table.album.get(id);
@@ -422,9 +424,7 @@ song.get = async function(songs){
 
     for (let song of res){
       if (song.album == id){
-        song.album = {
-          name: name
-        };
+        song.album = name
       }
     }
   }
@@ -467,16 +467,46 @@ song.get = async function(songs){
 
   return res;
 }
+/**
+ * Finds songs with bad paths and deletes them
+ */
+song.scan = function(){
+  return new Promise((resolve, reject)=>{
+    table.song.forEach((index, tuple)=>{
+      if (tuple.blank){
+        return;
+      }
 
+      fs.exists(tuple.data.path, (exist)=>{
+        if (exist){
+          return;
+        }
+
+        //Since the file doesn't acutally exist, delete the row
+        tuple.erase();
+        table.song.overwrite(index, tuple);
+
+        console.log('DELETE', index);
+      })
+    }, ()=>{
+      resolve();
+      return;
+    })
+  })
+}
 
 
 
 
 async function initialize(){
+  //Search for empty rows in the database
   await table.artist.scan();
   await table.genre.scan();
   await table.album.scan();
   await table.song.scan();
+
+  //Scan for songs with bad paths
+  await song.scan();
 
   return true;
 }

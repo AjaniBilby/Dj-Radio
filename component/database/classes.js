@@ -28,7 +28,7 @@ byteRadix = new Radix(str);
 class Attribute{
   constructor(parent){
     if (!(parent instanceof Table)){
-      throw `Invalid attribute definition. Not supplied valid parent table`;
+      throw new Error(`Invalid attribute definition. Not supplied valid parent table`);
     }
 
     this.name = "";
@@ -43,46 +43,64 @@ Attribute.prototype.encode = function(value){
   switch (this.type){
     case this.types.int:
       if (Number.isInteger(value)){
-        let int = value;
-        value = byteRadix.numberToEncoding(value);
+        let working = true;
+        let arr = [value];
 
-        if (value.length > this.size){
-          console.warn(`Attribute ${this.parent.name}/${this.name} has been given too big an int while will overflow. "${int}"`);
-          value = value.slice(value.length-this.size, value.length); //Select from the ending characters
+        while (working){
+          working = false;
+
+          for (let i=0; i<arr.length; i++){
+            if (arr[i] > 255){
+              arr[i] -= 255;
+              arr[i+1] = (arr[i+1] || 0) + 1;
+
+              working = true;
+            }
+          }
         }
 
-        //Add leading zeros to make the number the right size
-        while (value.length < this.size){
-          value = String.fromCharCode(0) + value;
+        if (arr.length > this.size){
+          let bytes = arr.reverse();
+          console.warn(`Attribute ${this.parent.name}/${this.name} has been given too big an int while will overflow. "${value}" [${bytes}]`);
+          arr = arr.splice(0, this.size);
         }
 
-        if (value.length > this.size){
-          throw `Unexpected attribute encoding error. ${value.length}>${this.size}`;
+        while (arr.length < this.size){
+          arr.push(0);
         }
 
-        return value;
+        return Buffer(arr.reverse());;
       }
 
       badInput = true;
 
     case this.types.string:
-      if (typeof value == 'string'){
+      if (typeof value == 'string'){   
+        let buffer = new Buffer(value);
+
         //Remove any extra characters in the string
         if (value.length > this.size){
           console.warn(`Attribute ${this.parent.name}/${this.name} has been give a string that was too long.\n${value.length} > ${this.size}. "${value}"`);
-          value = value.slice(0, this.size);
-        }
 
-        //Add white space if the string is too short
-        while (value.length < this.size){
-          value += ' ';
+          while (buffer.length > length){
+            value = value.slice(0, value.length-1);
+            buffer = new Buffer(value);
+          }
         }
+      
+        //Add trailing spaces to make the string the right length
+        if (buffer.length < this.size){
+          let extra = '';
+          let loop = this.size-buffer.length;
 
-        if (value.length > this.size){
-          throw `Unexpected attribute encoding error. ${value.length}>${this.size}`;
+          for (let i=0; i<loop; i++){
+            extra += ' ';
+          }
+
+          buffer = Buffer.concat([buffer, new Buffer(extra)]);
         }
-
-        return value;
+      
+        return buffer;
       }
       
       badInput = true;
@@ -90,9 +108,9 @@ Attribute.prototype.encode = function(value){
     default:
       if (badInput){
         let type = Object.keys(this.types)[this.type];
-        throw `Attribute ${this.parent.name}/${this.name} has been given a bad input (${value}), should of been ${type}`;
+        throw new Error(`Attribute ${this.parent.name}/${this.name} has been given a bad input (${value}), should of been ${type}`);
       }else{
-        throw `Attribute ${this.parent.name}/${this.name} does not have a valid type`;
+        throw new Error(`Attribute ${this.parent.name}/${this.name} does not have a valid type`);
       }
   }
 }
@@ -103,10 +121,19 @@ Attribute.prototype.decode = function(value){
 
   switch (this.type){
     case this.types.int:
-      return byteRadix.encodingToNumber(value);
+      let int = 0;
+
+      for (let i=0; i<value.length; i++){
+        let exp = Math.pow(255, value.length-i-1);
+        int += value[i]*exp;
+      }
+    
+      return int;
     case this.types.string:
 
-      //remove trailing spaces
+      value = value.toString();
+
+      //Remove trailling white space
       while (value[value.length-1] == " "){
         value = value.slice(0, value.length-1);
       }
@@ -114,7 +141,7 @@ Attribute.prototype.decode = function(value){
       return value;
 
     default:
-      throw `Attribute ${this.parent.name}/${this.name} has an invalid type`;
+      throw new Error(`Attribute ${this.parent.name}/${this.name} has an invalid type`);
   }
 }
 //All numbers are unsigned
@@ -139,14 +166,19 @@ class Tuple{
    */
   constructor(parent, data){
     if (!(parent instanceof Table)){
-      throw `Invalid Tuple definition. Not supplied valid parent table`;
+      throw new Error(`Invalid Tuple definition. Not supplied valid parent table`);
     }
 
     this.parent = parent;
     this.index = 0;
     this.data = {};
     this.blank = true;
-    this.decode(data);
+
+    if (!data || data.length == 0){
+      this.erase(); //Make this tuple blank
+    }else{
+      this.decode(data);
+    }
   }
 }
 /**
@@ -174,14 +206,21 @@ Tuple.prototype.decode = function(data){
  * Encode the tuple data into raw row data
  */
 Tuple.prototype.encode = function(){
-  var data = '';
+  let attrs = [];
 
   for (field of this.parent.fields){
-    data += field.encode(this.data[field.name]);
+    let attr = field.encode(this.data[field.name]);
+    if (attr.length != field.size){
+      throw new Error(`Unknown encoding error. The attribute ${this.parent.name}/${field.name} has encoded to the wrong length.\n\rWas ${attr.length}, should of been ${field.size}`);
+    }
+
+    attrs.push(attr);
   }
 
+  let data = Buffer.concat(attrs);
+
   if (data.length != this.parent.rowLength){
-    throw `Unknown encoding error, tuple length is too long ${data.length}>${this.parent.rowLength}`;
+    throw new Error(`Unknown encoding error, The tuple's length is incorrect.\n\tWas ${data.length}, should of been ${this.parent.rowLength}`);
   }
 
   return data;
@@ -218,10 +257,10 @@ class Table{
    */
   constructor(name, filePath){
     if (typeof name != "string" || name.length == 0){
-      throw `Invalid init table name (${name}). All tables must have valid names for debugging`;
+      throw new Error(`Invalid init table name (${name}). All tables must have valid names for debugging`);
     }
     if (!fs.existsSync(filePath)){
-      throw "Invalid table path ("+filePath+")";
+      throw new Error(`Invalid table path ("${filePath}")`);
     }
 
     this.name = name;
@@ -242,10 +281,10 @@ class Table{
  */
 Table.prototype.addField = function(name, type, size){
   if (typeof name != 'string' || name.length == 0){
-    throw `Invalid init field name ${this.name}/${name}. All fields must have valid names for debugging`;
+    throw new Error(`Invalid init field name ${this.name}/${name}. All fields must have valid names for debugging`);
   }
   if (type != 'int' && type != 'string'){
-    throw `Table ${this.name} is attempting to create field ${name} with an invalid type (${type})`;
+    throw new Error(`Table ${this.name} is attempting to create field ${name} with an invalid type (${type})`);
   }
 
   if (isNaN(size)){
@@ -277,20 +316,8 @@ Table.prototype.addField = function(name, type, size){
  * Returns a blank tuple to be used for setting later
  * @returns {Tuple}
  */
-Table.prototype.tuple = function(){
+Table.prototype.tuple = function(data){
   //Create blank data for the tuple to use
-  data = '';
-  for (let field of this.fields){
-    if (field.type == 0){
-      for (let i=0; i<field.size; i++){
-        data += String.fromCharCode(0);
-      }
-    }else{
-      for (let i=0; i<field.size; i++){
-        data += ' ';
-      }
-    }
-  }
 
   return new Tuple(this, data);
 }
@@ -327,44 +354,33 @@ Table.prototype.scan = function(){
  */
 Table.prototype.forEach = function(loop, finish){
   if (typeof loop != 'function'){
-    throw `Invalid loop function given to table ${this.name}`;
+    throw new Error(`Invalid loop function given to table ${this.name}`);
   }
 
-  let stream = fs.createReadStream(this.path);
+  let stream = fs.createReadStream(this.path, {
+    highWaterMark: this.rowLength
+  });
   let i = 0;
-  let broken = false;
-  let buffer = '';
   let db = this;
 
-  stream.on('data', function(chunk){
-    buffer += chunk.toString();
-
-    while (buffer.length >= db.rowLength){
-      if (db.empty.indexOf(i) == -1){
-        let t = new Tuple(
-          db,
-          buffer.slice(0, db.rowLength)
-        );
-        t.index = i;
-        let res = loop(i, t);
-
-        //If the callback returns false, safely end the loop
-        if (res === false){
-          broken = true;
-          stream.close();
-
-          //Since if does not reach the end, we need to trigger the finish here as well
-          if (typeof finish == "function"){
-            finish(i);
-          }
-          return;
-        }
-      }
-
-
-      buffer = buffer.slice(db.rowLength);
-      i++;
+  stream.on('data', function(row){
+    if (row.length != db.rowLength){
+      throw new Error(`${db.name} row ${i} is bad. ${row.length}-${db.rowLength}`);
     }
+
+    let t = db.tuple(row);
+    t.index = i;
+    let res = loop(i, t);
+
+    if (res === false){
+      stream.close();
+
+      if (typeof finish == "function"){
+        finish(i);
+      }
+    }
+
+    i++;
   });
 
   stream.on('end', function(){
@@ -386,12 +402,12 @@ Table.prototype.forEach = function(loop, finish){
  */
 Table.prototype.append = function(tuple){
   if (!(tuple instanceof Tuple) || tuple.parent != this){
-    throw `Provided ${this.name} with an invalid Tuple`;
+    throw new Error(`Provided ${this.name} with an invalid Tuple`);
   }
 
   let chunk = tuple.encode();
   if (chunk.length != this.rowLength){
-    throw `Critical Error\nTuple did not generate the correct length row.\nExpected ${this.rowLength} got ${chunk.length}`;
+    throw new Error(`Critical Error\nTuple did not generate the correct length row.\nExpected ${this.rowLength} got ${chunk.length}`);
   }
 
   let index = this.rows;
@@ -428,27 +444,21 @@ Table.prototype.get = function(index){
       return;
     }
 
-    let buffer = '';
-    let i = 0;
-
-    let stream = fs.createReadStream(this.path);
-    stream.on('data', function(chunk){
-      buffer += chunk.toString();
-
-      while (buffer.length >= db.rowLength){
-        if (i == index){
-          let chunk = buffer.slice(0, db.lenth);
-          let tuple = new Tuple(db, chunk);
-          tuple.index = index;
-
-          resolve(tuple);
-          stream.close();
-          return;
-        }
-
-        buffer = buffer.slice(db.rowLength);
-        i += 1;
+    let stream = fs.createReadStream(this.path, {
+      start: index*this.rowLength,
+      highWaterMark: this.rowLength
+    });
+    stream.on('data', function(row){
+      if (row.length < this.rowLength){
+        throw new Error(`${this.name} has had a bad read. ${row.length}-${this.rowLength}`);
       }
+
+      let t = db.tuple(row);
+      t.index = index;
+
+      resolve(t);
+      stream.close();
+      return;
     })
 
     stream.on('end', function(){
@@ -465,12 +475,12 @@ Table.prototype.get = function(index){
  */
 Table.prototype.overwrite = function(index, tuple){
   if (!(tuple instanceof Tuple) || tuple.parent != this){
-    throw `Parsing irrelevent tuple to ${this.name}`;
+    throw new Error(`Parsing irrelevent tuple to ${this.name}`);
   }
 
   let chunk = tuple.encode();
   if (chunk.length != this.rowLength){
-    throw `Critical Error\nTuple did not generate the correct length row.\nExpected ${this.rowLength} got ${chunk.length}`;
+    throw new Error(`Critical Error\nTuple did not generate the correct length row.\nExpected ${this.rowLength} got ${chunk.length}`);
   }
 
   let stream = fs.createWriteStream(this.path, {
@@ -495,7 +505,7 @@ Table.prototype.overwrite = function(index, tuple){
  */
 Table.prototype.delete = async function(index){
   //Create a blank row
-  var tuple = new Tuple(this, '').erase();
+  var tuple = db.tuple();
 
   return await this.overwrite(index, tuple);
 }
