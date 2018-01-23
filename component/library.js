@@ -49,6 +49,7 @@ function GetFiles(folder){
   });
 }
 
+//Catalog a folder
 function Catalog(folder){
   return new Promise((resolve, reject) => {
     let status = 0;
@@ -63,7 +64,7 @@ function Catalog(folder){
       let nstatus = parseInt(i/files.length*100);
       if (nstatus != status){
         status = nstatus;
-        console.log(`Scanning ${status}%\n\t"${folder}"`);
+        console.log(`Scanning ${status}%`);
       }
 
       let file = files[i];
@@ -120,10 +121,32 @@ function Catalog(folder){
 
     GetFiles(folder).then((parse)=>{
       files = parse;
-      console.log(`Scanning ${files.length} files`);
+      console.log(`Scanning ${files.length} files\n\t"${folder}"`);
       loop(0);
     });
   });
+}
+
+function Pick(){
+  return new Promise((resolve, reject)=>{
+    function Find(){
+      let index = Math.floor(Math.random()*db.table.song.rows);
+
+      db.song.get([index])
+        .then((result)=>{
+          if (result[0]){
+            resolve(result[0]);
+          }else{
+            Find();
+          }
+        })
+        .catch(()=>{
+          Find();
+        })
+    }
+
+    Find();
+  })
 }
 
 let start = Date.now();
@@ -135,10 +158,13 @@ db.initialize().then(()=>{
   console.log(' Albums  ', db.table.album.rows);
   console.log(' Artists ', db.table.artist.rows);
   console.log(' Genres  ', db.table.genre.rows, '\n');
+
+  // Catalog('e:/user/music');
 });
 
 
 module.exports = {
+  pick: Pick,
   catalog: Catalog,
   db: db
 }

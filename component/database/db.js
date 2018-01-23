@@ -355,8 +355,9 @@ song.get = async function(songs){
     res.push({
       title:    tuple.data.title,
       path:     tuple.data.path,
-      duration: tuple.data.length,
+      duration: tuple.data.length/1000,
       album:    tuple.data.album,
+      albumID:  tuple.data.album,
       track:    tuple.data.track,
       year:     tuple.data.year,
       artist:   [],
@@ -485,8 +486,6 @@ song.scan = function(){
         //Since the file doesn't acutally exist, delete the row
         tuple.erase();
         table.song.overwrite(index, tuple);
-
-        console.log('DELETE', index);
       })
     }, ()=>{
       resolve();

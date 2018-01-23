@@ -1,8 +1,53 @@
 var library = require('./component/library.js');
+let player = require('./component/player.js');
 let app = require('passer');
 let fs = require('fs');
 
+let listeners = 0;
+
+
+player.pick = async function(){
+  return await library.pick();
+}
+
+
 app.listen(8080);
+
+app.get('/stream', function(req, res){
+  res.setHeader('Content-Type',      'audio/mpeg');
+  res.setHeader('Transfer-Encoding', 'chunked');
+  res.setHeader('ice-audio-info',    'bitrate=128;samplerate=22050');
+  res.setHeader('Cache-Control',     "no-cache");
+  res.setHeader('Connection',        'Keep-Alive');
+  player.stream.pipe(res);
+  listeners += 1;
+
+  req.on('close', function(){
+    player.stream.unpipe(res);
+    listeners -= 1;
+  })
+})
+app.get('/history', (req, res)=>{
+  res.end(JSON.stringify(player.history));
+});
+app.get('/icon/*', async (req,res)=>{
+  res.setHeader('Content-Type', 'image/jpeg');
+
+  let success = false;
+  try {
+    success = await app.parseFile(req, res, `./data/icons/${req.wildcards[0]}.jpg`);
+  }catch(e){}
+
+  if (!success){
+    app.on404(req, res);
+  }
+})
+app.get('/queue', (req,res)=>{
+  res.end(JSON.stringify(player.queue));
+})
+app.get('/listeners', (req, res)=>{
+  res.end(listeners.toString());
+})
 
 
 //Get Song Data
