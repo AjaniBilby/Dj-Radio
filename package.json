@@ -1,21 +1,18 @@
 {
   "name": "dj-radio",
-  "version": "1.0.0",
-  "description": "",
+  "version": "2.0.0",
+  "description": "A online radio server",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "author": "",
+  "author": "Ajani James Bilby",
   "license": "ISC",
   "dependencies": {
-    "cosf": "^1.0.6",
-    "custom-radix": "^1.0.4",
     "lame": "^1.2.4",
     "mass-random": "^1.0.3",
-    "musicmetadata": "^2.0.4",
-    "object-manipulation": "^1.0.0",
-    "passer": "^1.0.0",
+    "musicmetadata": "^2.0.5",
+    "passer": "^3.0.0",
     "throttle": "^1.0.3"
   }
 }

@@ -1,20 +1,4 @@
-var Radix = require('custom-radix');
-var cosf = require('cosf');
 var fs = require('fs');
-
-
-
-
-
-
-
-
-//Setup fixed radix sizes
-str = '';
-for (let i=0; i<=255; i++){
-  str += String.fromCharCode(i);
-}
-byteRadix = new Radix(str);
 
 
 

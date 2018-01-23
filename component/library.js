@@ -136,3 +136,9 @@ db.initialize().then(()=>{
   console.log(' Artists ', db.table.artist.rows);
   console.log(' Genres  ', db.table.genre.rows, '\n');
 });
+
+
+module.exports = {
+  catalog: Catalog,
+  db: db
+}
