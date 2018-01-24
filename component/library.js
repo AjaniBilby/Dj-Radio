@@ -64,12 +64,16 @@ function Catalog(folder){
       let nstatus = parseInt(i/files.length*100);
       if (nstatus != status){
         status = nstatus;
-        console.log(`Scanning ${status}%`);
+        console.info(`Scanning ${status}%`);
       }
 
       let file = files[i];
+      let stream = fs.createReadStream(file);
 
-      mm(fs.createReadStream(file), (err, meta)=>{
+      mm(stream, {duration: true}, (err, meta)=>{
+        //Close the stream handle in the filesystem since the metadata has been collected
+        stream.close();
+
         if (!err){
           var hasIcon = meta.picture[0] && meta.picture[0].data && meta.picture[0].format == 'jpg';
           
@@ -121,7 +125,7 @@ function Catalog(folder){
 
     GetFiles(folder).then((parse)=>{
       files = parse;
-      console.log(`Scanning ${files.length} files\n\t"${folder}"`);
+      console.info(`Scanning ${files.length} files\n\t"${folder}"`);
       loop(0);
     });
   });
@@ -129,6 +133,11 @@ function Catalog(folder){
 
 function Pick(){
   return new Promise((resolve, reject)=>{
+    if (db.table.song.rows === 0){
+      reject('No songs');
+      return;
+    }
+
     function Find(){
       let index = Math.floor(Math.random()*db.table.song.rows);
 
@@ -142,6 +151,11 @@ function Pick(){
         })
         .catch(()=>{
           Find();
+        })
+
+      db.table.song.get(index)
+        .then((tuple)=>{
+          // console.log('tuple', tuple);
         })
     }
 
@@ -158,8 +172,6 @@ db.initialize().then(()=>{
   console.log(' Albums  ', db.table.album.rows);
   console.log(' Artists ', db.table.artist.rows);
   console.log(' Genres  ', db.table.genre.rows, '\n');
-
-  // Catalog('e:/user/music');
 });
 
 

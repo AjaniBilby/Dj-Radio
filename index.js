@@ -10,7 +10,7 @@ player.pick = async function(){
   return await library.pick();
 }
 
-
+app.publicFolder = './public/';
 app.listen(8080);
 
 app.get('/stream', function(req, res){
@@ -19,12 +19,19 @@ app.get('/stream', function(req, res){
   res.setHeader('ice-audio-info',    'bitrate=128;samplerate=22050');
   res.setHeader('Cache-Control',     "no-cache");
   res.setHeader('Connection',        'Keep-Alive');
-  player.stream.pipe(res);
   listeners += 1;
 
+  let local = function(chunk){
+    res.write(chunk);
+  }
+
+  player.stream.on('data', local);
+
   req.on('close', function(){
-    player.stream.unpipe(res);
     listeners -= 1;
+
+    player.stream.removeListener('data', local);
+    return;
   })
 })
 app.get('/history', (req, res)=>{

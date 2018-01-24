@@ -233,6 +233,7 @@ song.exist = function(tuple){
   return new Promise((resolve, reject) => {
     table.song.forEach((i, row) => {
       if (
+        tuple.data.path == row.data.path || (
         tuple.data.title == row.data.title &&
         tuple.data.length == row.data.length &&
         tuple.data.album == row.data.album &&
@@ -247,7 +248,7 @@ song.exist = function(tuple){
         tuple.data.genre2 == row.data.genre2 &&
         tuple.data.genre3 == row.data.genre3 &&
         tuple.data.genre4 == row.data.genre4 &&
-        tuple.data.genre5 == row.data.genre5
+        tuple.data.genre5 == row.data.genre5)
       ){
         resolve(i);
         return;

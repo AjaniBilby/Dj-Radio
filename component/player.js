@@ -1,4 +1,6 @@
-let Throttle = require('throttle');
+import { clearTimeout } from 'timers';
+
+let Throttle = require('./throttle.js');
 let lame = require('lame');
 let fs = require('fs');
 
@@ -26,11 +28,16 @@ encoder.on('data', function(chunk){
 
 
 
-
+let songTimer;
 
 async function Next(songData){
   metaData.unshift(songData);
   metaData.splice(11);
+
+  if (songTimer){
+    clearTimeout(songTimer);
+  }
+  liveStream.flush(); //Ensure that all web streams are synced incase there are tiny miss matches with duration and throttle timing
 
   let decoder = new lame.Decoder();
   decoder.on('data', function(chunk){
@@ -41,7 +48,7 @@ async function Next(songData){
     decoder.write(chunk);
   });
 
-  setTimeout(()=>{
+  songTimer = setTimeout(()=>{
     Next(queue.splice(0)[0]);
   },songData.duration*1000);
 
@@ -53,7 +60,6 @@ async function Next(songData){
 
 
 setTimeout(async ()=>{
-  console.log(queue);
   module.exports.pick()
     .then((song)=>{
       Next(song);
