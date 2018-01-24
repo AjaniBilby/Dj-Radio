@@ -1,5 +1,3 @@
-import { clearTimeout } from 'timers';
-
 let Throttle = require('./throttle.js');
 let lame = require('lame');
 let fs = require('fs');
